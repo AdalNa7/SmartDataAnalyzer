@@ -114,6 +114,12 @@ function generateReport() {
             loading.style.display = 'none';
             content.style.display = 'block';
             content.classList.add('fade-in');
+            
+            // Show the export PDF button after report is generated
+            const exportBtn = document.getElementById('exportPdfBtn');
+            if (exportBtn) {
+                exportBtn.style.display = 'inline-block';
+            }
         })
         .catch(error => {
             console.error('Error generating report:', error);
@@ -217,6 +223,33 @@ function displayReport(data) {
     `;
     
     content.innerHTML = html;
+}
+
+// PDF Export Functionality
+function exportReportAsPDF() {
+    const exportBtn = document.getElementById('exportPdfBtn');
+    
+    // Show loading state
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating PDF...';
+    exportBtn.disabled = true;
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = '/download-report';
+    link.download = 'smart_data_analyzer_report.pdf';
+    
+    // Add to DOM temporarily, click, then remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Reset button after a short delay
+    setTimeout(() => {
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+        showAlert('PDF report is being downloaded!', 'success');
+    }, 1000);
 }
 
 // Chat Functionality

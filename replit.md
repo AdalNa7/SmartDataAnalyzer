@@ -46,6 +46,7 @@ Smart Data Analyzer is a Flask-based web application that provides AI-powered an
 - **Report Generation**: Structured JSON responses for insights and analysis
 - **Data Cleaning**: Automated detection of missing data and outliers
 - **Conversational Interface**: Chat-style interaction for data exploration
+- **PDF Export**: Professional report generation with ReportLab styling and branding
 
 ## Data Flow
 
@@ -91,8 +92,18 @@ Smart Data Analyzer is a Flask-based web application that provides AI-powered an
 - **Process Management**: Gunicorn with reload capabilities for development
 - **Error Handling**: Comprehensive error handling for file operations and data processing
 
+## Recent Changes
+- June 17, 2025: Added PDF export functionality with professional report generation
+  - Created PDFReportGenerator class using ReportLab for styled PDF creation
+  - Added /download-report route for PDF generation and download
+  - Integrated export button in AI Report tab with loading states
+  - PDF includes executive summary, insights, data quality analysis, recommendations, and sample data
+  - Professional styling with company branding ("Smart Sales Decisions")
+  - Comprehensive error handling and file download functionality
+- June 17, 2025: Initial setup with complete SaaS platform architecture
+
 ## Changelog
-- June 17, 2025. Initial setup
+- June 17, 2025: Initial setup
 
 ## User Preferences
 
