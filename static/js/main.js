@@ -77,12 +77,19 @@ function initializeFileUpload() {
 // Report Generation
 function initializeReportGeneration() {
     const generateBtn = document.getElementById('generateReportBtn');
+    const exportBtn = document.getElementById('exportPdfBtn');
     
     if (!generateBtn) return;
 
     generateBtn.addEventListener('click', function() {
         generateReport();
     });
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportReportAsPDF();
+        });
+    }
 }
 
 function generateReport() {
