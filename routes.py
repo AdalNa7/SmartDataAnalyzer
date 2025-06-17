@@ -121,15 +121,15 @@ def analyze_sales_data(df):
             df_clean[required_cols['quantity']] = pd.to_numeric(df_clean[required_cols['quantity']], errors='coerce')
             
             df_clean['revenue'] = df_clean[required_cols['price']] * df_clean[required_cols['quantity']]
-            analysis['total_revenue'] = df_clean['revenue'].sum()
-            analysis['avg_order_value'] = df_clean['revenue'].mean()
-            analysis['revenue_std'] = df_clean['revenue'].std()
+            analysis['total_revenue'] = float(df_clean['revenue'].sum())
+            analysis['avg_order_value'] = float(df_clean['revenue'].mean())
+            analysis['revenue_std'] = float(df_clean['revenue'].std())
         except:
-            analysis['total_revenue'] = 0
-            analysis['avg_order_value'] = 0
+            analysis['total_revenue'] = 0.0
+            analysis['avg_order_value'] = 0.0
     else:
-        analysis['total_revenue'] = 0
-        analysis['avg_order_value'] = 0
+        analysis['total_revenue'] = 0.0
+        analysis['avg_order_value'] = 0.0
     
     # Product analysis
     if 'product' in required_cols:
@@ -137,9 +137,18 @@ def analyze_sales_data(df):
             product_sales = df_clean.groupby(required_cols['product'])['revenue'].agg(['sum', 'count', 'mean']).round(2)
             product_sales = product_sales.sort_values('sum', ascending=False)
             
-            analysis['top_products'] = product_sales.head(10).to_dict('index')
-            analysis['total_unique_products'] = len(product_sales)
-            analysis['top_product'] = product_sales.index[0] if len(product_sales) > 0 else "No products found"
+            # Convert to JSON-serializable format
+            top_products_dict = {}
+            for product, row in product_sales.head(10).iterrows():
+                top_products_dict[str(product)] = {
+                    'sum': float(row['sum']),
+                    'count': int(row['count']),
+                    'mean': float(row['mean'])
+                }
+            
+            analysis['top_products'] = top_products_dict
+            analysis['total_unique_products'] = int(len(product_sales))
+            analysis['top_product'] = str(product_sales.index[0]) if len(product_sales) > 0 else "No products found"
         except:
             analysis['top_product'] = "Product analysis failed"
             analysis['total_unique_products'] = 0
@@ -160,8 +169,8 @@ def analyze_sales_data(df):
             monthly_sales = df_clean.groupby('month')['revenue'].sum()
             daily_sales = df_clean.groupby('day_of_week')['revenue'].sum()
             
-            analysis['best_month'] = monthly_sales.idxmax() if len(monthly_sales) > 0 else "Unknown"
-            analysis['best_day'] = daily_sales.idxmax() if len(daily_sales) > 0 else "Unknown"
+            analysis['best_month'] = int(monthly_sales.idxmax()) if len(monthly_sales) > 0 else "Unknown"
+            analysis['best_day'] = str(daily_sales.idxmax()) if len(daily_sales) > 0 else "Unknown"
             analysis['date_range'] = f"{df_clean[required_cols['date']].min().strftime('%Y-%m-%d')} to {df_clean[required_cols['date']].max().strftime('%Y-%m-%d')}"
         except:
             analysis['best_month'] = "Date analysis failed"
@@ -174,27 +183,42 @@ def detect_data_quality_issues(df):
     """Detect data quality issues in uploaded file"""
     issues = {}
     
-    # Missing values
+    # Missing values - convert to native Python types
     missing_data = df.isnull().sum()
-    issues['missing_values'] = missing_data[missing_data > 0].to_dict()
-    issues['missing_percentage'] = (missing_data / len(df) * 100).round(2).to_dict()
+    missing_dict = {}
+    missing_pct_dict = {}
+    
+    for col, count in missing_data.items():
+        if count > 0:
+            missing_dict[str(col)] = int(count)
+            missing_pct_dict[str(col)] = float(round(count / len(df) * 100, 2))
+    
+    issues['missing_values'] = missing_dict
+    issues['missing_percentage'] = missing_pct_dict
     
     # Duplicate rows
-    issues['duplicate_rows'] = df.duplicated().sum()
-    issues['duplicate_percentage'] = round(issues['duplicate_rows'] / len(df) * 100, 2)
+    duplicate_count = df.duplicated().sum()
+    issues['duplicate_rows'] = int(duplicate_count)
+    issues['duplicate_percentage'] = float(round(duplicate_count / len(df) * 100, 2))
     
     # Zero or negative values in numeric columns
     numeric_cols = df.select_dtypes(include=[np.number]).columns
-    issues['zero_negative_values'] = {}
+    zero_negative_dict = {}
     
     for col in numeric_cols:
         if 'price' in col.lower() or 'cost' in col.lower() or 'amount' in col.lower():
             zero_count = (df[col] <= 0).sum()
             if zero_count > 0:
-                issues['zero_negative_values'][col] = zero_count
+                zero_negative_dict[str(col)] = int(zero_count)
+    
+    issues['zero_negative_values'] = zero_negative_dict
     
     # Data type inconsistencies
-    issues['data_types'] = df.dtypes.astype(str).to_dict()
+    data_types_dict = {}
+    for col, dtype in df.dtypes.items():
+        data_types_dict[str(col)] = str(dtype)
+    
+    issues['data_types'] = data_types_dict
     
     return issues
 
@@ -225,19 +249,19 @@ def generate_report():
         # Generate insights based on real data
         insights = []
         if analysis['total_revenue'] > 0:
-            insights.append(f"Total revenue: ${analysis['total_revenue']:,.2f}")
-            insights.append(f"Average order value: ${analysis['avg_order_value']:.2f}")
+            insights.append(f"Total revenue: ${float(analysis['total_revenue']):,.2f}")
+            insights.append(f"Average order value: ${float(analysis['avg_order_value']):.2f}")
             insights.append(f"Top performing product: {analysis['top_product']}")
         else:
             insights.append("Revenue calculation requires price and quantity columns")
         
         if analysis['total_unique_products'] > 0:
-            insights.append(f"Product portfolio includes {analysis['total_unique_products']} unique items")
+            insights.append(f"Product portfolio includes {int(analysis['total_unique_products'])} unique items")
         
         if 'date_range' in analysis and analysis['date_range'] != "Unknown":
             insights.append(f"Data covers period: {analysis['date_range']}")
             if 'best_month' in analysis and analysis['best_month'] != "Unknown":
-                insights.append(f"Strongest sales month: {analysis['best_month']}")
+                insights.append(f"Strongest sales month: {int(analysis['best_month'])}")
             if 'best_day' in analysis and analysis['best_day'] != "Unknown":
                 insights.append(f"Best performing day: {analysis['best_day']}")
         
@@ -246,7 +270,7 @@ def generate_report():
         if quality_issues['missing_values']:
             recommendations.append(f"Address missing data in columns: {list(quality_issues['missing_values'].keys())}")
         if quality_issues['duplicate_rows'] > 0:
-            recommendations.append(f"Remove {quality_issues['duplicate_rows']} duplicate entries")
+            recommendations.append(f"Remove {int(quality_issues['duplicate_rows'])} duplicate entries")
         if quality_issues['zero_negative_values']:
             recommendations.append(f"Review zero/negative values in: {list(quality_issues['zero_negative_values'].keys())}")
         if not recommendations:
@@ -255,15 +279,15 @@ def generate_report():
         report_data = {
             'report': {
                 'title': 'Sales Data Analysis Report',
-                'summary': f'Comprehensive analysis of {analysis["total_rows"]} records across {analysis["total_columns"]} fields',
-                'total_revenue': f'${analysis["total_revenue"]:,.2f}' if analysis['total_revenue'] > 0 else 'Revenue calculation unavailable',
-                'top_product': analysis['top_product'],
+                'summary': f'Comprehensive analysis of {int(analysis["total_rows"])} records across {int(analysis["total_columns"])} fields',
+                'total_revenue': f'${float(analysis["total_revenue"]):,.2f}' if analysis['total_revenue'] > 0 else 'Revenue calculation unavailable',
+                'top_product': str(analysis['top_product']),
                 'data_quality': 'Good' if len(quality_issues['missing_values']) == 0 and quality_issues['duplicate_rows'] == 0 else 'Needs attention'
             },
             'insights': insights,
             'cleaning': {
                 'missing_values': len(quality_issues['missing_values']),
-                'duplicates': quality_issues['duplicate_rows'],
+                'duplicates': int(quality_issues['duplicate_rows']),
                 'outliers': len(quality_issues['zero_negative_values']),
                 'data_types': f"{len(df.select_dtypes(include=[np.number]).columns)} numeric, {len(df.select_dtypes(include=['object']).columns)} text columns"
             },
@@ -547,8 +571,8 @@ def download_report():
                 'Revenue trends show seasonal patterns' if total_revenue > 0 else 'Revenue analysis requires price and quantity data'
             ],
             'cleaning': {
-                'missing_values': df.isnull().sum().sum(),
-                'duplicates': df.duplicated().sum(),
+                'missing_values': int(df.isnull().sum().sum()),
+                'duplicates': int(df.duplicated().sum()),
                 'outliers': len([col for col in df.select_dtypes(include=[np.number]).columns if (df[col] <= 0).any()]),
                 'data_types': f"{len(df.select_dtypes(include=[np.number]).columns)} numeric, {len(df.select_dtypes(include=['object']).columns)} text columns"
             },
