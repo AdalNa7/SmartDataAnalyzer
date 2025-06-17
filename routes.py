@@ -768,7 +768,53 @@ def send_report():
             'message': 'Failed to send report'
         })
 
-
+@app.route('/secure-download/<report_id>')
+def secure_download(report_id):
+    """Secure PDF report download with token validation"""
+    try:
+        # Get access token from query parameters
+        access_token = request.args.get('token')
+        
+        if access_token:
+            # Validate access token for secure downloads
+            if not email_service.validate_access_token(access_token, report_id):
+                abort(403)  # Forbidden - invalid or expired token
+            
+            # Get report info from token
+            token_data = email_service.get_report_info_by_token(access_token)
+            if not token_data:
+                abort(404)
+                
+            filepath = token_data['filepath']
+        else:
+            # Fallback to session-based download
+            if 'report_id' not in session or session['report_id'] != report_id:
+                abort(403)
+            
+            # Construct filepath from report_id
+            filepath = None
+            for filename in os.listdir('reports'):
+                if report_id in filename:
+                    filepath = os.path.join('reports', filename)
+                    break
+            
+            if not filepath:
+                abort(404)
+        
+        # Verify file exists
+        if not os.path.exists(filepath):
+            abort(404)
+        
+        # Send file with proper headers
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=f'business_intelligence_report_{report_id}.pdf',
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        abort(500)
 
 @app.errorhandler(500)
 def server_error(e):

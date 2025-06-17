@@ -27,6 +27,22 @@
         </div>
     </div>
 
+    <!-- Email Confirmation Banner -->
+    {% if report_sent and client_email %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-success d-flex align-items-center" role="alert">
+                <i class="fas fa-check-circle me-3 fs-5"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">Report Successfully Delivered!</h6>
+                    <p class="mb-0">Your comprehensive business intelligence report has been emailed to <strong>{{ client_email }}</strong>. 
+                    Check your inbox for the secure download link.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Tabs Navigation -->
     <div class="row">
         <div class="col-12">

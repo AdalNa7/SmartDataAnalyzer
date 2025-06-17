@@ -149,7 +149,7 @@ class EnhancedPDFGenerator:
             'filename': filename,
             'filepath': filepath,
             'report_id': report_id,
-            'download_url': f'/download-report/{report_id}'
+            'download_url': f'/secure-download/{report_id}'
         }
 
     def _add_header(self, story):
