@@ -725,6 +725,75 @@ def send_report():
             'message': 'Failed to send report'
         })
 
+@app.route('/email-report', methods=['POST'])
+def email_report():
+    """Send PDF report via email after data analysis"""
+    try:
+        if 'filepath' not in session:
+            return jsonify({
+                'success': False,
+                'message': 'No data available. Please upload a file first.'
+            }), 400
+        
+        data = request.get_json()
+        client_email = data.get('email', '').strip()
+        
+        if not client_email:
+            return jsonify({
+                'success': False,
+                'message': 'Email address is required.'
+            }), 400
+        
+        # Load and analyze data
+        filepath = session['filepath']
+        if filepath.lower().endswith('.csv'):
+            df = pd.read_csv(filepath)
+        else:
+            df = pd.read_excel(filepath)
+        
+        # Perform comprehensive analysis
+        analysis_data = analyze_sales_data(df)
+        
+        # Generate comprehensive PDF report
+        report_info = enhanced_pdf_generator.generate_comprehensive_report(
+            analysis_data=analysis_data,
+            client_email=client_email,
+            sample_data=df
+        )
+        
+        # Send email with download link
+        base_url = f"https://{request.host}" if request.is_secure else f"http://{request.host}"
+        email_result = email_service.send_report_email(
+            client_email=client_email,
+            report_info=report_info,
+            download_url=f"{base_url}{report_info['download_url']}"
+        )
+        
+        if email_result['success']:
+            return jsonify({
+                'success': True,
+                'message': f'Report successfully sent to {client_email}'
+            })
+        else:
+            # In development mode, provide the direct download link
+            if 'download_url' in email_result:
+                return jsonify({
+                    'success': True,
+                    'message': f'Report generated successfully. Development mode: SMTP not configured, but report is ready.',
+                    'download_url': f"{base_url}{report_info['download_url']}"
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f'Email delivery failed: {email_result["message"]}'
+                }), 500
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error generating or sending report: {str(e)}'
+        }), 500
+
 @app.route('/secure-download/<report_id>')
 def secure_download(report_id):
     """Secure PDF report download with token validation"""

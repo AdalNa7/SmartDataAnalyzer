@@ -116,10 +116,14 @@ function generateReport() {
             content.style.display = 'block';
             content.classList.add('fade-in');
             
-            // Show the export PDF button after report is generated
+            // Show the export PDF and email buttons after report is generated
             const exportBtn = document.getElementById('exportPdfBtn');
+            const emailBtn = document.getElementById('emailReportBtn');
             if (exportBtn) {
                 exportBtn.style.display = 'inline-block';
+            }
+            if (emailBtn) {
+                emailBtn.style.display = 'inline-block';
             }
         })
         .catch(error => {
@@ -1299,3 +1303,54 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Email Report Functionality
+function emailReport() {
+    const email = prompt('Enter your email address to receive the PDF report:');
+    
+    if (!email) {
+        return; // User canceled
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAlert('Please enter a valid email address.', 'error');
+        return;
+    }
+    
+    const emailBtn = document.getElementById('emailReportBtn');
+    const originalText = emailBtn.innerHTML;
+    
+    // Show loading state
+    emailBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+    emailBtn.disabled = true;
+    
+    // Send email request
+    fetch('/email-report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            email: email
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Report successfully sent to ${email}! Check your inbox for the download link.`, 'success');
+        } else {
+            showAlert(`Failed to send email: ${data.message}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending email:', error);
+        showAlert('Failed to send email. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Reset button
+        emailBtn.innerHTML = originalText;
+        emailBtn.disabled = false;
+    });
+}
