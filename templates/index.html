@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Data - Smart Data Analyzer{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 fw-bold text-white mb-4">
+                    Turn Your Sales Data Into Insights
+                </h1>
+                <p class="lead text-white-50 mb-5">
+                    Upload your Excel or CSV files and get AI-powered analysis in seconds
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Upload Card -->
+            <div class="card shadow-lg border-0 upload-card">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="upload-icon mb-3">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h3 class="card-title mb-2">Upload Your Sales Data</h3>
+                        <p class="text-muted">
+                            Support for .xlsx and .csv files up to 16MB
+                        </p>
+                    </div>
+
+                    <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <div class="upload-zone" id="uploadZone">
+                            <input type="file" name="file" id="fileInput" accept=".csv,.xlsx,.xls" required>
+                            <div class="upload-content">
+                                <i class="fas fa-file-upload mb-3"></i>
+                                <h5>Drag & drop your file here</h5>
+                                <p class="text-muted mb-3">or click to browse</p>
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Choose File
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- File Info Display -->
+                        <div id="fileInfo" class="file-info mt-3" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-excel text-success me-2"></i>
+                                <span id="fileName"></span>
+                                <span id="fileSize" class="text-muted ms-2"></span>
+                            </div>
+                        </div>
+
+                        <!-- Data Requirements -->
+                        <div class="mt-4">
+                            <h6 class="text-primary">
+                                <i class="fas fa-info-circle me-2"></i>Required Data Columns
+                            </h6>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="requirement-item">
+                                        <i class="fas fa-box text-primary me-2"></i>
+                                        <strong>Product</strong> - Product names or IDs
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="requirement-item">
+                                        <i class="fas fa-hashtag text-primary me-2"></i>
+                                        <strong>Quantity</strong> - Number of items sold
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="requirement-item">
+                                        <i class="fas fa-dollar-sign text-primary me-2"></i>
+                                        <strong>Price</strong> - Unit price or total amount
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="requirement-item">
+                                        <i class="fas fa-calendar text-primary me-2"></i>
+                                        <strong>Date</strong> - Transaction date
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5" id="uploadBtn" disabled>
+                                <i class="fas fa-magic me-2"></i>Analyze My Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Features Preview -->
+            <div class="row mt-5">
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h5>AI-Powered Reports</h5>
+                        <p class="text-muted">Get intelligent insights and recommendations from your sales data</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-broom"></i>
+                        </div>
+                        <h5>Smart Data Cleaning</h5>
+                        <p class="text-muted">Automatically detect and fix data quality issues</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h5>Chat with Your Data</h5>
+                        <p class="text-muted">Ask questions and get instant answers about your sales</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
