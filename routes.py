@@ -8,6 +8,7 @@ import random
 from datetime import datetime
 from pdf_generator import PDFReportGenerator
 from growth_analytics import GrowthAnalytics
+from advanced_analytics import AdvancedAnalytics
 
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
@@ -322,6 +323,78 @@ def growth_analytics():
             'product_lifecycle': fallback_analytics.detect_product_lifecycle(),
             'seasonality': fallback_analytics.detect_seasonality_patterns(),
             'anomalies': fallback_analytics.detect_anomalies()
+        })
+
+@app.route('/advanced-analytics')
+def advanced_analytics():
+    """Generate advanced analytics including segmentation, forecasting, and health metrics"""
+    try:
+        # Get uploaded data from session
+        if 'uploaded_data' not in session:
+            return jsonify({'error': 'No data uploaded'})
+        
+        # Load the data
+        file_path = session['uploaded_data']
+        if file_path.endswith('.csv'):
+            df = pd.read_csv(file_path)
+        else:
+            df = pd.read_excel(file_path)
+        
+        # Initialize advanced analytics
+        analytics = AdvancedAnalytics(df)
+        
+        # Generate all advanced analytics
+        result = {
+            'customer_segmentation': analytics.customer_segmentation(),
+            'forecast': analytics.smart_forecast(),
+            'data_health': analytics.data_health_score(),
+            'growth_metrics': analytics.growth_metrics()
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        # Return fallback analytics on error
+        fallback_analytics = AdvancedAnalytics(pd.DataFrame())
+        return jsonify({
+            'customer_segmentation': fallback_analytics.customer_segmentation(),
+            'forecast': fallback_analytics.smart_forecast(),
+            'data_health': fallback_analytics.data_health_score(),
+            'growth_metrics': fallback_analytics.growth_metrics()
+        })
+
+@app.route('/send-report', methods=['POST'])
+def send_report():
+    """Simulate sending report via email or Slack"""
+    try:
+        data = request.get_json()
+        method = data.get('method', 'email')
+        recipient = data.get('recipient', 'client@example.com')
+        
+        if method == 'email':
+            # Simulate email sending
+            return jsonify({
+                'success': True,
+                'message': f'✅ Report sent to {recipient}',
+                'method': 'email'
+            })
+        elif method == 'slack':
+            # Simulate Slack sending
+            return jsonify({
+                'success': True,
+                'message': f'✅ Report posted to Slack channel',
+                'method': 'slack'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid delivery method'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to send report'
         })
 
 @app.errorhandler(500)
