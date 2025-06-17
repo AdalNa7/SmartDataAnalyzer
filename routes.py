@@ -329,18 +329,21 @@ def growth_analytics():
 def advanced_analytics():
     """Generate advanced analytics including segmentation, forecasting, and health metrics"""
     try:
-        # Get uploaded data from session
-        if 'uploaded_data' not in session:
-            return jsonify({'error': 'No data uploaded'})
+        df = None
         
-        # Load the data
-        file_path = session['uploaded_data']
-        if file_path.endswith('.csv'):
-            df = pd.read_csv(file_path)
-        else:
-            df = pd.read_excel(file_path)
+        # Try to get uploaded data from session
+        if 'uploaded_data' in session:
+            try:
+                file_path = session['uploaded_data']
+                if file_path.endswith('.csv'):
+                    df = pd.read_csv(file_path)
+                else:
+                    df = pd.read_excel(file_path)
+            except Exception as e:
+                print(f"Error loading uploaded data: {e}")
+                df = None
         
-        # Initialize advanced analytics
+        # Initialize advanced analytics (will use fallback if df is None/empty)
         analytics = AdvancedAnalytics(df)
         
         # Generate all advanced analytics
@@ -354,6 +357,7 @@ def advanced_analytics():
         return jsonify(result)
         
     except Exception as e:
+        print(f"Advanced analytics error: {e}")
         # Return fallback analytics on error
         fallback_analytics = AdvancedAnalytics(pd.DataFrame())
         return jsonify({
