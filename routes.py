@@ -294,14 +294,17 @@ def growth_analytics():
         # Initialize growth analytics
         analytics = GrowthAnalytics(df)
         
-        # Generate all analytics
+        # Generate all analytics including new advanced features
         result = {
             'revenue_prediction': analytics.predict_revenue_trend(),
             'top_products': analytics.get_top_products(),
             'best_times': analytics.analyze_best_selling_times(),
             'missed_opportunities': analytics.find_missed_opportunities(),
             'data_quality': analytics.get_data_quality_summary(),
-            'recommendations': analytics.generate_ai_recommendations()
+            'recommendations': analytics.generate_ai_recommendations(),
+            'product_lifecycle': analytics.detect_product_lifecycle(),
+            'seasonality': analytics.detect_seasonality_patterns(),
+            'anomalies': analytics.detect_anomalies()
         }
         
         return jsonify(result)
@@ -315,7 +318,10 @@ def growth_analytics():
             'best_times': fallback_analytics.analyze_best_selling_times(),
             'missed_opportunities': fallback_analytics.find_missed_opportunities(),
             'data_quality': fallback_analytics.get_data_quality_summary(),
-            'recommendations': fallback_analytics.generate_ai_recommendations()
+            'recommendations': fallback_analytics.generate_ai_recommendations(),
+            'product_lifecycle': fallback_analytics.detect_product_lifecycle(),
+            'seasonality': fallback_analytics.detect_seasonality_patterns(),
+            'anomalies': fallback_analytics.detect_anomalies()
         })
 
 @app.errorhandler(500)

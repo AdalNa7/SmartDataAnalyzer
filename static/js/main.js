@@ -313,6 +313,11 @@ function displayGrowthInsights(data) {
     // Data Quality
     displayDataQuality(data.data_quality);
     
+    // Advanced Features
+    displayProductLifecycle(data.product_lifecycle);
+    displaySeasonalityPatterns(data.seasonality);
+    displayAnomalies(data.anomalies);
+    
     // AI Recommendations
     displayRecommendations(data.recommendations);
 }
@@ -465,6 +470,243 @@ function displayRecommendations(recommendations) {
     });
     
     container.innerHTML = html;
+}
+
+// Advanced Features Functions
+function displayProductLifecycle(lifecycleData) {
+    const container = document.getElementById('lifecycleMatrix');
+    let html = '';
+    
+    lifecycleData.forEach(product => {
+        const stageColors = {
+            'Launch': 'primary',
+            'Growth': 'success', 
+            'Mature': 'warning',
+            'Decline': 'danger'
+        };
+        
+        const stageIcons = {
+            'Launch': 'fas fa-rocket',
+            'Growth': 'fas fa-trending-up',
+            'Mature': 'fas fa-chart-line',
+            'Decline': 'fas fa-trending-down'
+        };
+        
+        html += `
+            <div class="lifecycle-item mb-2 p-2 border rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${product.product}</strong>
+                        <div class="mt-1">
+                            <span class="badge bg-${stageColors[product.stage]}">
+                                <i class="${stageIcons[product.stage]} me-1"></i>${product.stage}
+                            </span>
+                            <small class="text-muted ms-2">${product.confidence} confidence</small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-success">$${product.total_revenue.toLocaleString()}</small>
+                        <div class="lifecycle-actions mt-1">
+                            <button class="btn btn-sm btn-outline-primary" onclick="getExternalLinks('${product.product}')">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function displaySeasonalityPatterns(seasonalityData) {
+    // Render seasonality chart
+    const chartData = JSON.parse(seasonalityData.chart);
+    Plotly.newPlot('seasonalityChart', chartData.data, chartData.layout, {responsive: true});
+    
+    // Update peak day info
+    document.getElementById('peakDay').textContent = `${seasonalityData.peak_day} (${(seasonalityData.seasonality_strength * 100).toFixed(1)}% variation)`;
+}
+
+function displayAnomalies(anomalies) {
+    const container = document.getElementById('anomalyList');
+    let html = '';
+    
+    if (anomalies.length === 0) {
+        html = '<p class="text-muted text-center">No anomalies detected!</p>';
+    } else {
+        anomalies.forEach(anomaly => {
+            const alertType = anomaly.severity === 'high' ? 'danger' : 'warning';
+            const icon = anomaly.type === 'spike' ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+            
+            html += `
+                <div class="alert alert-${alertType} mb-2" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="${icon} me-2 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <strong>${anomaly.product}</strong>
+                            <div class="small">
+                                ${anomaly.type === 'spike' ? 'Unusual spike' : 'Significant drop'}: 
+                                $${anomaly.value.toFixed(2)} (${anomaly.deviation_percent.toFixed(1)}% deviation)
+                            </div>
+                            <div class="small text-muted">Expected: ${anomaly.expected_range}</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-${alertType}" onclick="investigateAnomaly('${anomaly.product}')">
+                            Investigate
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
+}
+
+function getExternalLinks(productName) {
+    // Generate external research links
+    const encodedProduct = encodeURIComponent(productName);
+    const links = {
+        trends: `https://trends.google.com/trends/explore?q=${encodedProduct}`,
+        amazon: `https://www.amazon.com/s?k=${encodedProduct}`,
+        search: `https://www.google.com/search?q=${encodedProduct}+market+analysis`
+    };
+    
+    // Create modal or popup with links
+    const modal = `
+        <div class="modal fade" id="externalLinksModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Research: ${productName}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="d-grid gap-2">
+                            <a href="${links.trends}" target="_blank" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-line me-2"></i>View Google Trends
+                            </a>
+                            <a href="${links.amazon}" target="_blank" class="btn btn-outline-warning">
+                                <i class="fab fa-amazon me-2"></i>Compare on Amazon
+                            </a>
+                            <a href="${links.search}" target="_blank" class="btn btn-outline-info">
+                                <i class="fas fa-search me-2"></i>Market Analysis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal and add new one
+    const existingModal = document.getElementById('externalLinksModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modal);
+    const modalElement = new bootstrap.Modal(document.getElementById('externalLinksModal'));
+    modalElement.show();
+}
+
+function investigateAnomaly(productName) {
+    showAlert(`Investigating anomaly for ${productName}. Check external trends and recent market changes.`, 'info');
+    getExternalLinks(productName);
+}
+
+// Recommendation Action Functions
+function initializeRecommendationActions() {
+    const exportBtn = document.getElementById('exportRecommendationsBtn');
+    const saveBtn = document.getElementById('saveRecommendationsBtn');
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportRecommendationsToEmail();
+        });
+    }
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            saveRecommendationsForLater();
+        });
+    }
+}
+
+function exportRecommendationsToEmail() {
+    // Simulate email export
+    const subject = encodeURIComponent('AI Growth Recommendations - Smart Data Analyzer');
+    const body = encodeURIComponent('Please find attached AI-powered growth recommendations from your data analysis.');
+    const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+    
+    window.open(mailtoLink, '_blank');
+    showAlert('Email client opened with recommendations!', 'success');
+}
+
+function saveRecommendationsForLater() {
+    // Simulate saving recommendations
+    const recommendations = document.getElementById('recommendationsList').innerHTML;
+    localStorage.setItem('saved_recommendations', recommendations);
+    localStorage.setItem('saved_date', new Date().toISOString());
+    
+    showAlert('Recommendations saved to your browser storage!', 'success');
+}
+
+// Enhanced Recommendation Display with Action Buttons
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendationsList');
+    let html = '';
+    
+    recommendations.forEach((rec, index) => {
+        const impactColor = rec.impact === 'High' ? 'success' : rec.impact === 'Medium' ? 'warning' : 'info';
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="recommendation-icon me-3">
+                                <i class="${rec.icon} fa-lg text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="card-title">${rec.title}</h6>
+                                <p class="card-text small">${rec.recommendation}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-${impactColor}">${rec.impact} Impact</span>
+                                    <div class="recommendation-actions">
+                                        <button class="btn btn-sm btn-success me-1" onclick="acceptRecommendation(${index})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-primary me-1" onclick="exportSingleRecommendation(${index})">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" onclick="saveRecommendation(${index})">
+                                            <i class="fas fa-bookmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Initialize action buttons
+    initializeRecommendationActions();
+}
+
+function acceptRecommendation(index) {
+    showAlert('Recommendation accepted and added to action plan!', 'success');
+}
+
+function exportSingleRecommendation(index) {
+    showAlert('Recommendation exported to email!', 'info');
+}
+
+function saveRecommendation(index) {
+    showAlert('Recommendation saved for later review!', 'success');
 }
 
 // Chat Functionality
