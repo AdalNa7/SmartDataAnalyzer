@@ -444,6 +444,96 @@ body {
     min-height: 250px;
 }
 
+/* Advanced Analytics Styling */
+.data-health-circle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+}
+
+.progress-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: conic-gradient(#28a745 0deg, #e9ecef 0deg);
+    transition: all 0.5s ease;
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: white;
+}
+
+.score-text {
+    position: relative;
+    z-index: 1;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Growth Metrics Cards */
+.sparkline-container {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.sparkline-container canvas {
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Customer Segmentation */
+#segmentationChart,
+#forecastChart {
+    border-radius: var(--border-radius);
+    background: white;
+}
+
+/* Advanced Analytics Tab */
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+/* Send Buttons */
+#sendEmailBtn, #sendSlackBtn {
+    transition: all 0.2s ease;
+}
+
+#sendEmailBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+#sendSlackBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+/* Customer Samples Table */
+#customerSamplesTable .badge {
+    font-size: 0.75em;
+}
+
+#customerSamplesTable tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Health Issues Badges */
+#healthIssues .badge {
+    margin: 0.125rem;
+}
+
 /* Responsive adjustments for advanced features */
 @media (max-width: 768px) {
     .lifecycle-item {
@@ -458,5 +548,24 @@ body {
     .recommendation-actions .btn {
         width: 100%;
         margin: 0.125rem 0;
+    }
+    
+    .progress-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .progress-circle::before {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .score-text {
+        font-size: 1.25rem;
+    }
+    
+    .sparkline-container canvas {
+        width: 120px;
+        height: 30px;
     }
 }

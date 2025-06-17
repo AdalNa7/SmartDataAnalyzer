@@ -93,6 +93,15 @@ Smart Data Analyzer is a Flask-based web application that provides AI-powered an
 - **Error Handling**: Comprehensive error handling for file operations and data processing
 
 ## Recent Changes
+- June 17, 2025: Added comprehensive Advanced Analytics features with machine learning and forecasting capabilities
+  - **Customer Segmentation with K-Means**: ML-powered clustering analysis segmenting customers into High Value, Occasional, and One-Time groups with interactive pie charts and summary tables
+  - **Smart Forecast Engine**: 30-day sales forecasting using Prophet and statsmodels with trend analysis and plain-English summaries showing expected growth percentages
+  - **Data Health Meter**: Comprehensive data quality scoring (0-100) analyzing missing values, duplicates, and outliers with animated circular progress indicators and color-coded status
+  - **Slack/Email Integration**: Demo mode simulation for sending AI reports via email or Slack with confirmation messages and realistic workflow
+  - **Growth Over Time Panel**: KPI dashboard showing week-over-week and month-over-month growth percentages with best 7-day performance streak tracking and interactive sparkline charts
+  - **Advanced Analytics Tab**: New dedicated section with customer insights, forecasting, and data quality analysis integrated seamlessly into existing Bootstrap 5 UI
+  - **Prophet & Statsmodels Integration**: Time series forecasting with automated fallback between Prophet and statsmodels for reliable predictions
+  - **Interactive Visualizations**: Customer segmentation pie charts, forecast line charts with confidence intervals, and real-time sparkline rendering using HTML5 Canvas
 - June 17, 2025: Added advanced growth-boosting micro features to enhance insights and usability
   - **Product Life Cycle Detection**: Automated detection of product stages (Launch, Growth, Mature, Decline) using sales trend analysis with confidence scoring
   - **Seasonality Detection**: Weekly and monthly sales patterns analysis with mini charts, heatmaps, and seasonal index calculations

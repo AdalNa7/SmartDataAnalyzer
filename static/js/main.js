@@ -709,6 +709,298 @@ function saveRecommendation(index) {
     showAlert('Recommendation saved for later review!', 'success');
 }
 
+// Advanced Analytics Functionality
+function initializeAdvancedAnalytics() {
+    const generateBtn = document.getElementById('generateAdvancedBtn');
+    const sendEmailBtn = document.getElementById('sendEmailBtn');
+    const sendSlackBtn = document.getElementById('sendSlackBtn');
+    
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function() {
+            generateAdvancedAnalytics();
+        });
+    }
+    
+    if (sendEmailBtn) {
+        sendEmailBtn.addEventListener('click', function() {
+            sendReport('email');
+        });
+    }
+    
+    if (sendSlackBtn) {
+        sendSlackBtn.addEventListener('click', function() {
+            sendReport('slack');
+        });
+    }
+}
+
+function generateAdvancedAnalytics() {
+    const generateBtn = document.getElementById('generateAdvancedBtn');
+    const sendEmailBtn = document.getElementById('sendEmailBtn');
+    const sendSlackBtn = document.getElementById('sendSlackBtn');
+    
+    // Show loading state
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+    generateBtn.disabled = true;
+    
+    fetch('/advanced-analytics')
+        .then(response => response.json())
+        .then(data => {
+            // Display all analytics components
+            displayDataHealth(data.data_health);
+            displayGrowthMetrics(data.growth_metrics);
+            displayCustomerSegmentation(data.customer_segmentation);
+            displayForecast(data.forecast);
+            displayCustomerSamples(data.customer_segmentation.sample_customers);
+            
+            // Show all sections
+            document.getElementById('dataHealthSection').style.display = 'block';
+            document.getElementById('growthMetricsSection').style.display = 'block';
+            document.getElementById('segmentationForecastSection').style.display = 'block';
+            document.getElementById('customerSamplesSection').style.display = 'block';
+            
+            // Show send buttons
+            sendEmailBtn.style.display = 'inline-block';
+            sendSlackBtn.style.display = 'inline-block';
+            
+            // Reset button
+            generateBtn.innerHTML = '<i class="fas fa-brain me-2"></i>Regenerate Analytics';
+            generateBtn.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Failed to generate advanced analytics', 'error');
+            generateBtn.innerHTML = '<i class="fas fa-brain me-2"></i>Generate Advanced Analytics';
+            generateBtn.disabled = false;
+        });
+}
+
+function displayDataHealth(healthData) {
+    // Update score circle
+    const scoreCircle = document.querySelector('.progress-circle');
+    const scoreText = document.querySelector('.score-text');
+    const comment = document.getElementById('healthComment');
+    const issues = document.getElementById('healthIssues');
+    const totalRows = document.getElementById('totalRows');
+    const missingPct = document.getElementById('missingPct');
+    
+    if (scoreCircle && scoreText) {
+        scoreCircle.setAttribute('data-score', healthData.score);
+        scoreText.textContent = healthData.score + '%';
+        
+        // Animate progress circle
+        updateProgressCircle(scoreCircle, healthData.score, healthData.color);
+    }
+    
+    if (comment) {
+        comment.textContent = healthData.comment;
+        comment.className = `text-${healthData.color}`;
+    }
+    
+    if (issues && healthData.issues) {
+        let issuesHtml = '';
+        healthData.issues.forEach(issue => {
+            issuesHtml += `<small class="badge bg-warning me-1">${issue}</small>`;
+        });
+        issues.innerHTML = issuesHtml;
+    }
+    
+    if (totalRows && healthData.stats) {
+        totalRows.textContent = healthData.stats.total_rows.toLocaleString();
+    }
+    
+    if (missingPct && healthData.stats) {
+        missingPct.textContent = healthData.stats.missing_pct.toFixed(1) + '%';
+    }
+}
+
+function updateProgressCircle(circle, score, color) {
+    const circumference = 2 * Math.PI * 45; // radius = 45
+    const offset = circumference - (score / 100) * circumference;
+    
+    circle.style.background = `conic-gradient(
+        var(--${color}-color) ${score * 3.6}deg,
+        #e9ecef ${score * 3.6}deg
+    )`;
+}
+
+function displayGrowthMetrics(metrics) {
+    // Update growth percentages
+    const wowGrowth = document.getElementById('wowGrowth');
+    const momGrowth = document.getElementById('momGrowth');
+    const bestStreak = document.getElementById('bestStreak');
+    const streakDate = document.getElementById('streakDate');
+    
+    if (wowGrowth) {
+        wowGrowth.textContent = (metrics.wow_growth >= 0 ? '+' : '') + metrics.wow_growth.toFixed(1) + '%';
+        wowGrowth.className = metrics.wow_growth >= 0 ? 'text-success' : 'text-danger';
+    }
+    
+    if (momGrowth) {
+        momGrowth.textContent = (metrics.mom_growth >= 0 ? '+' : '') + metrics.mom_growth.toFixed(1) + '%';
+        momGrowth.className = metrics.mom_growth >= 0 ? 'text-primary' : 'text-danger';
+    }
+    
+    if (bestStreak) {
+        bestStreak.textContent = '$' + metrics.best_streak.toLocaleString();
+    }
+    
+    if (streakDate) {
+        streakDate.textContent = metrics.best_streak_date;
+    }
+    
+    // Draw sparklines
+    if (metrics.sparkline) {
+        drawSparkline('wowSparkline', metrics.sparkline, '#28a745');
+        drawSparkline('momSparkline', metrics.sparkline, '#007bff');
+    }
+}
+
+function drawSparkline(canvasId, data, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    if (data.length < 2) return;
+    
+    // Calculate dimensions
+    const padding = 5;
+    const chartWidth = width - 2 * padding;
+    const chartHeight = height - 2 * padding;
+    
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+    
+    // Draw line
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    
+    data.forEach((value, index) => {
+        const x = padding + (index / (data.length - 1)) * chartWidth;
+        const y = padding + chartHeight - ((value - min) / range) * chartHeight;
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    ctx.stroke();
+}
+
+function displayCustomerSegmentation(segmentationData) {
+    // Display segmentation chart
+    const chartData = JSON.parse(segmentationData.chart);
+    Plotly.newPlot('segmentationChart', chartData.data, chartData.layout, {responsive: true});
+    
+    // Display segment table
+    const segmentTable = document.getElementById('segmentTable');
+    let tableHtml = `
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Segment</th>
+                    <th>Count</th>
+                    <th>Avg Revenue</th>
+                    <th>Avg Frequency</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    segmentationData.segments.forEach(segment => {
+        tableHtml += `
+            <tr>
+                <td><span class="badge bg-primary">${segment.segment}</span></td>
+                <td>${segment.count}</td>
+                <td>$${segment.avg_revenue.toFixed(2)}</td>
+                <td>${segment.avg_frequency.toFixed(1)}</td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += '</tbody></table>';
+    segmentTable.innerHTML = tableHtml;
+}
+
+function displayForecast(forecastData) {
+    // Display forecast chart
+    const chartData = JSON.parse(forecastData.chart);
+    Plotly.newPlot('forecastChart', chartData.data, chartData.layout, {responsive: true});
+    
+    // Update forecast summary
+    const forecastSummary = document.getElementById('forecastSummary');
+    if (forecastSummary) {
+        forecastSummary.innerHTML = `
+            <i class="fas fa-chart-line me-2"></i>
+            ${forecastData.summary}
+        `;
+        forecastSummary.className = forecastData.growth_rate >= 0 ? 'alert alert-success' : 'alert alert-warning';
+    }
+}
+
+function displayCustomerSamples(sampleCustomers) {
+    const tableBody = document.querySelector('#customerSamplesTable tbody');
+    if (!tableBody || !sampleCustomers) return;
+    
+    let tableHtml = '';
+    sampleCustomers.forEach(customer => {
+        const segmentColor = {
+            'High Value': 'success',
+            'Occasional': 'warning',
+            'One-Time': 'danger'
+        };
+        
+        tableHtml += `
+            <tr>
+                <td>${customer.customer}</td>
+                <td><span class="badge bg-${segmentColor[customer.segment_name] || 'secondary'}">${customer.segment_name}</span></td>
+                <td>$${customer.total_revenue.toLocaleString()}</td>
+                <td>${customer.frequency || 'N/A'}</td>
+                <td><i class="fas fa-check-circle text-success"></i> Active</td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = tableHtml;
+}
+
+function sendReport(method) {
+    const data = {
+        method: method,
+        recipient: method === 'email' ? 'client@example.com' : '#analytics-team'
+    };
+    
+    fetch('/send-report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showAlert(result.message, 'success');
+        } else {
+            showAlert(result.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Failed to send report', 'error');
+    });
+}
+
 // Chat Functionality
 function initializeChat() {
     const chatForm = document.getElementById('chatForm');
@@ -878,6 +1170,15 @@ function showAlert(message, type) {
         }, 5000);
     }
 }
+
+// Initialize all functionality when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFileUpload();
+    initializeReportGeneration();
+    initializeGrowthInsights();
+    initializeAdvancedAnalytics();
+    initializeChat();
+});
 
 // Add CSS for typing animation
 const style = document.createElement('style');
