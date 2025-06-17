@@ -7,6 +7,7 @@ import json
 import random
 from datetime import datetime
 from pdf_generator import PDFReportGenerator
+from growth_analytics import GrowthAnalytics
 
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
@@ -275,6 +276,47 @@ def download_report():
     except Exception as e:
         flash(f'Error generating PDF report: {str(e)}', 'error')
         return redirect(url_for('dashboard'))
+
+@app.route('/growth-analytics')
+def growth_analytics():
+    """Generate comprehensive growth analytics"""
+    if 'filepath' not in session:
+        return jsonify({'error': 'No data available'}), 400
+    
+    try:
+        # Load data
+        filepath = session['filepath']
+        if filepath.lower().endswith('.csv'):
+            df = pd.read_csv(filepath)
+        else:
+            df = pd.read_excel(filepath)
+        
+        # Initialize growth analytics
+        analytics = GrowthAnalytics(df)
+        
+        # Generate all analytics
+        result = {
+            'revenue_prediction': analytics.predict_revenue_trend(),
+            'top_products': analytics.get_top_products(),
+            'best_times': analytics.analyze_best_selling_times(),
+            'missed_opportunities': analytics.find_missed_opportunities(),
+            'data_quality': analytics.get_data_quality_summary(),
+            'recommendations': analytics.generate_ai_recommendations()
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        # Return fallback analytics on error
+        fallback_analytics = GrowthAnalytics(pd.DataFrame())
+        return jsonify({
+            'revenue_prediction': fallback_analytics.predict_revenue_trend(),
+            'top_products': fallback_analytics.get_top_products(),
+            'best_times': fallback_analytics.analyze_best_selling_times(),
+            'missed_opportunities': fallback_analytics.find_missed_opportunities(),
+            'data_quality': fallback_analytics.get_data_quality_summary(),
+            'recommendations': fallback_analytics.generate_ai_recommendations()
+        })
 
 @app.errorhandler(500)
 def server_error(e):

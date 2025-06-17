@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize all components
     initializeFileUpload();
     initializeReportGeneration();
+    initializeGrowthInsights();
     initializeChat();
 });
 
@@ -250,6 +251,220 @@ function exportReportAsPDF() {
         exportBtn.disabled = false;
         showAlert('PDF report is being downloaded!', 'success');
     }, 1000);
+}
+
+// Growth Insights Functionality
+function initializeGrowthInsights() {
+    const generateBtn = document.getElementById('generateGrowthBtn');
+    
+    if (!generateBtn) return;
+
+    generateBtn.addEventListener('click', function() {
+        generateGrowthInsights();
+    });
+}
+
+function generateGrowthInsights() {
+    const btn = document.getElementById('generateGrowthBtn');
+    const loading = document.getElementById('growthLoading');
+    const content = document.getElementById('growthContent');
+    
+    // Show loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing Growth Opportunities...';
+    btn.disabled = true;
+
+    // Fetch growth analytics data
+    fetch('/growth-analytics')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'error');
+                return;
+            }
+            
+            displayGrowthInsights(data);
+            loading.style.display = 'none';
+            content.style.display = 'block';
+            content.classList.add('fade-in');
+        })
+        .catch(error => {
+            console.error('Error generating growth insights:', error);
+            showAlert('Error generating growth insights. Please try again.', 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = '<i class="fas fa-chart-line me-2"></i>Generate Growth Insights';
+            btn.disabled = false;
+        });
+}
+
+function displayGrowthInsights(data) {
+    // Revenue Prediction
+    displayRevenuePrediction(data.revenue_prediction);
+    
+    // Top Products
+    displayTopProducts(data.top_products);
+    
+    // Best Times
+    displayBestTimes(data.best_times);
+    
+    // Missed Opportunities
+    displayMissedOpportunities(data.missed_opportunities);
+    
+    // Data Quality
+    displayDataQuality(data.data_quality);
+    
+    // AI Recommendations
+    displayRecommendations(data.recommendations);
+}
+
+function displayRevenuePrediction(data) {
+    // Update metrics
+    document.getElementById('growthRate').textContent = `+${data.growth_rate}%`;
+    document.getElementById('nextMonthRevenue').textContent = `$${data.next_month_revenue.toLocaleString()}`;
+    document.getElementById('predictionAccuracy').textContent = `${data.prediction_accuracy} Confidence`;
+    
+    // Render chart
+    const chartData = JSON.parse(data.chart);
+    Plotly.newPlot('revenuePredictionChart', chartData.data, chartData.layout, {responsive: true});
+}
+
+function displayTopProducts(data) {
+    // Render chart
+    const chartData = JSON.parse(data.chart);
+    Plotly.newPlot('topProductsChart', chartData.data, chartData.layout, {responsive: true});
+    
+    // Display product list
+    const listContainer = document.getElementById('topProductsList');
+    let listHtml = '';
+    
+    data.products.forEach((product, index) => {
+        const medal = ['🥇', '🥈', '🥉'][index] || '🏆';
+        listHtml += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <div>
+                    <span class="me-2">${medal}</span>
+                    <strong>${product.product}</strong>
+                </div>
+                <div class="text-end">
+                    <div class="text-success fw-bold">$${product.revenue.toLocaleString()}</div>
+                    <small class="text-muted">${product.quantity} units</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    listContainer.innerHTML = listHtml;
+}
+
+function displayBestTimes(data) {
+    // Render chart
+    const chartData = JSON.parse(data.chart);
+    Plotly.newPlot('bestTimesChart', chartData.data, chartData.layout, {responsive: true});
+    
+    // Update recommendation
+    document.getElementById('timeRecommendation').innerHTML = `
+        <i class="fas fa-lightbulb me-2"></i>
+        <span>${data.recommendation}</span>
+    `;
+}
+
+function displayMissedOpportunities(data) {
+    // Update total missed revenue
+    document.getElementById('missedRevenue').textContent = `$${data.total_missed_revenue.toLocaleString()}`;
+    
+    // Display opportunities list
+    const listContainer = document.getElementById('missedOpportunitiesList');
+    let listHtml = '';
+    
+    if (data.opportunities.length === 0) {
+        listHtml = '<p class="text-muted text-center">No missed opportunities detected!</p>';
+    } else {
+        data.opportunities.forEach(opp => {
+            listHtml += `
+                <div class="border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between">
+                        <strong>${opp.product}</strong>
+                        <span class="text-danger">-$${opp.potential_revenue.toFixed(2)}</span>
+                    </div>
+                    <small class="text-muted">${opp.missed_sales} missed sales at $${opp.avg_price.toFixed(2)}</small>
+                </div>
+            `;
+        });
+    }
+    
+    listContainer.innerHTML = listHtml;
+}
+
+function displayDataQuality(data) {
+    // Update quality score circle
+    const scoreElement = document.getElementById('qualityScore');
+    const percentage = data.quality_score;
+    scoreElement.querySelector('.percentage').textContent = `${percentage}%`;
+    
+    // Set color based on score
+    let color = '#dc3545'; // red
+    if (percentage >= 80) color = '#198754'; // green
+    else if (percentage >= 60) color = '#ffc107'; // yellow
+    
+    scoreElement.style.background = `conic-gradient(${color} ${percentage * 3.6}deg, #e9ecef 0deg)`;
+    
+    // Display quality details
+    const detailsContainer = document.getElementById('dataQualityDetails');
+    detailsContainer.innerHTML = `
+        <div class="row text-center">
+            <div class="col-6">
+                <div class="border-end">
+                    <h6 class="text-warning">${data.missing_values}</h6>
+                    <small>Missing Values</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <h6 class="text-info">${data.duplicates}</h6>
+                <small>Duplicates</small>
+            </div>
+        </div>
+        <div class="row text-center mt-2">
+            <div class="col-6">
+                <div class="border-end">
+                    <h6 class="text-danger">${data.zero_prices}</h6>
+                    <small>Zero Prices</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <h6 class="text-muted">${data.negative_quantities}</h6>
+                <small>Negative Qty</small>
+            </div>
+        </div>
+    `;
+}
+
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendationsList');
+    let html = '';
+    
+    recommendations.forEach(rec => {
+        const impactColor = rec.impact === 'High' ? 'success' : rec.impact === 'Medium' ? 'warning' : 'info';
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="recommendation-icon me-3">
+                                <i class="${rec.icon} fa-lg text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="card-title">${rec.title}</h6>
+                                <p class="card-text small">${rec.recommendation}</p>
+                                <span class="badge bg-${impactColor}">${rec.impact} Impact</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
 }
 
 // Chat Functionality
