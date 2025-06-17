@@ -1,15 +1,22 @@
 import os
 import pandas as pd
 import numpy as np
-from flask import render_template, request, jsonify, flash, redirect, url_for, session, make_response
+from flask import render_template, request, jsonify, flash, redirect, url_for, session, make_response, send_file, abort
+from flask_mail import Message
 from werkzeug.utils import secure_filename
-from app import app
+from app import app, mail
 import json
 from datetime import datetime
 from pdf_generator import PDFReportGenerator
+from enhanced_pdf_generator import EnhancedPDFGenerator
+from email_service import EmailService
 from growth_analytics import GrowthAnalytics
 from advanced_analytics import AdvancedAnalytics
 from data_cleaner import SmartDataCleaner
+
+# Initialize services
+enhanced_pdf_generator = EnhancedPDFGenerator()
+email_service = EmailService()
 
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
@@ -37,8 +44,14 @@ def upload_file():
         return redirect(url_for('index'))
     
     file = request.files['file']
+    client_email = request.form.get('client_email', '').strip()
+    
     if file.filename == '':
         flash('No file selected', 'error')
+        return redirect(url_for('index'))
+        
+    if not client_email:
+        flash('Email address is required for report delivery', 'error')
         return redirect(url_for('index'))
     
     if file and file.filename and allowed_file(file.filename):
@@ -65,8 +78,39 @@ def upload_file():
             session['rows'] = len(df)
             session['columns'] = list(df.columns)
             session['filepath'] = filepath
+            session['client_email'] = client_email
             
-            flash('File uploaded successfully!', 'success')
+            # Automated PDF generation and email delivery
+            try:
+                # Perform comprehensive analysis
+                analysis_data = analyze_sales_data(df)
+                
+                # Generate comprehensive PDF report
+                report_info = enhanced_pdf_generator.generate_comprehensive_report(
+                    analysis_data=analysis_data,
+                    client_email=client_email,
+                    sample_data=df
+                )
+                
+                # Send automated email with download link
+                base_url = f"https://{request.host}" if request.is_secure else f"http://{request.host}"
+                email_result = email_service.send_report_email(
+                    client_email=client_email,
+                    report_info=report_info,
+                    download_url=f"{base_url}{report_info['download_url']}"
+                )
+                
+                if email_result['success']:
+                    flash('Analysis complete! We\'ve emailed your detailed report.', 'success')
+                    session['report_sent'] = True
+                    session['report_id'] = report_info['report_id']
+                else:
+                    flash(f'Analysis complete. Report generated but email delivery failed: {email_result["message"]}', 'warning')
+                    session['report_download_url'] = report_info['download_url']
+                
+            except Exception as e:
+                flash(f'Report generation failed: {str(e)}', 'warning')
+            
             return redirect(url_for('dashboard'))
             
         except Exception as e:
@@ -85,10 +129,16 @@ def dashboard():
         flash('Please upload a file first', 'error')
         return redirect(url_for('index'))
     
+    # Check if report was sent via email
+    report_sent = session.get('report_sent', False)
+    client_email = session.get('client_email', '')
+    
     return render_template('dashboard.html', 
                          filename=session['filename'],
                          rows=session['rows'],
-                         columns=session['columns'])
+                         columns=session['columns'],
+                         report_sent=report_sent,
+                         client_email=client_email)
 
 def analyze_sales_data(df):
     """Comprehensive sales data analysis using pandas"""
@@ -717,6 +767,8 @@ def send_report():
             'success': False,
             'message': 'Failed to send report'
         })
+
+
 
 @app.errorhandler(500)
 def server_error(e):
