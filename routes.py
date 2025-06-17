@@ -9,6 +9,7 @@ from datetime import datetime
 from pdf_generator import PDFReportGenerator
 from growth_analytics import GrowthAnalytics
 from advanced_analytics import AdvancedAnalytics
+from data_cleaner import SmartDataCleaner
 
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
@@ -440,6 +441,55 @@ def explore_data():
     except Exception as e:
         return jsonify({'error': f'Error processing question: {str(e)}'}), 500
 
+@app.route('/clean-data')
+def clean_data():
+    """Analyze data quality and provide cleaning recommendations"""
+    try:
+        if 'filepath' not in session:
+            return jsonify({'error': 'No data uploaded. Please upload a file first.'}), 400
+        
+        # Load the uploaded data
+        filepath = session['filepath']
+        try:
+            if filepath.lower().endswith('.csv'):
+                df = pd.read_csv(filepath)
+            else:
+                df = pd.read_excel(filepath)
+        except Exception as e:
+            return jsonify({'error': f'Error reading file: {str(e)}'}), 400
+        
+        if df.empty:
+            return jsonify({'error': 'The uploaded file is empty'}), 400
+        
+        # Analyze data quality using SmartDataCleaner
+        cleaner = SmartDataCleaner(df)
+        cleaning_analysis = cleaner.analyze_data_quality()
+        
+        # Get specific cleaning suggestions
+        cleaning_suggestions = cleaner.get_cleaned_suggestions()
+        
+        return jsonify({
+            'analysis': cleaning_analysis,
+            'suggestions': cleaning_suggestions,
+            'data_preview': {
+                'total_rows': len(df),
+                'total_columns': len(df.columns),
+                'columns': df.columns.tolist(),
+                'sample_data': df.head(5).to_dict('records')
+            }
+        })
+        
+    except ValueError as e:
+        return jsonify({
+            'error': 'Data validation failed',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'error': 'Data cleaning analysis failed',
+            'message': f'Error analyzing your data: {str(e)}'
+        }), 500
+
 @app.errorhandler(413)
 def too_large(e):
     flash('File too large. Maximum size is 16MB.', 'error')
@@ -497,10 +547,10 @@ def download_report():
                 'Revenue trends show seasonal patterns' if total_revenue > 0 else 'Revenue analysis requires price and quantity data'
             ],
             'cleaning': {
-                'missing_values': random.randint(0, 10),
-                'duplicates': random.randint(0, 5),
-                'outliers': random.randint(0, 15),
-                'data_types': 'Optimized for analysis'
+                'missing_values': df.isnull().sum().sum(),
+                'duplicates': df.duplicated().sum(),
+                'outliers': len([col for col in df.select_dtypes(include=[np.number]).columns if (df[col] <= 0).any()]),
+                'data_types': f"{len(df.select_dtypes(include=[np.number]).columns)} numeric, {len(df.select_dtypes(include=['object']).columns)} text columns"
             },
             'personalized': [
                 'Consider analyzing seasonal trends in your sales data',
@@ -557,20 +607,16 @@ def growth_analytics():
         
         return jsonify(result)
         
-    except Exception as e:
-        # Return fallback analytics on error
-        fallback_analytics = GrowthAnalytics(pd.DataFrame())
+    except ValueError as e:
         return jsonify({
-            'revenue_prediction': fallback_analytics.predict_revenue_trend(),
-            'top_products': fallback_analytics.get_top_products(),
-            'best_times': fallback_analytics.analyze_best_selling_times(),
-            'missed_opportunities': fallback_analytics.find_missed_opportunities(),
-            'data_quality': fallback_analytics.get_data_quality_summary(),
-            'recommendations': fallback_analytics.generate_ai_recommendations(),
-            'product_lifecycle': fallback_analytics.detect_product_lifecycle(),
-            'seasonality': fallback_analytics.detect_seasonality_patterns(),
-            'anomalies': fallback_analytics.detect_anomalies()
-        })
+            'error': 'Data validation failed',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'error': 'Analytics processing failed',
+            'message': f'Error analyzing your data: {str(e)}'
+        }), 500
 
 @app.route('/advanced-analytics')
 def advanced_analytics():
