@@ -123,14 +123,10 @@ function generateReport() {
             content.style.display = 'block';
             content.classList.add('fade-in');
             
-            // Show the export PDF and email buttons after report is generated
-            const exportBtn = document.getElementById('exportPdfBtn');
-            const emailBtn = document.getElementById('emailReportBtn');
-            if (exportBtn) {
-                exportBtn.style.display = 'inline-block';
-            }
-            if (emailBtn) {
-                emailBtn.style.display = 'inline-block';
+            // Show the action buttons container after report is generated
+            const reportActions = document.getElementById('reportActions');
+            if (reportActions) {
+                reportActions.style.display = 'block';
             }
         })
         .catch(error => {

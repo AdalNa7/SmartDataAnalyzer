@@ -74,13 +74,17 @@
                                 <button class="btn btn-primary btn-lg me-3" id="generateReportBtn">
                                     <i class="fas fa-magic me-2"></i>Generate AI Report
                                 </button>
-                                <button class="btn btn-success btn-lg me-2" id="exportPdfBtn" style="display: none;">
+                                <p class="text-muted mt-3">Click to analyze your data and generate insights</p>
+                            </div>
+                            
+                            <!-- Action buttons that appear after report generation -->
+                            <div class="text-center py-3" id="reportActions" style="display: none;">
+                                <button class="btn btn-success btn-lg me-3" id="exportPdfBtn">
                                     <i class="fas fa-file-pdf me-2"></i>Export Report as PDF
                                 </button>
-                                <button class="btn btn-outline-primary btn-lg" id="emailReportBtn" style="display: none;">
+                                <button class="btn btn-outline-primary btn-lg" id="emailReportBtn">
                                     <i class="fas fa-envelope me-2"></i>Email Report
                                 </button>
-                                <p class="text-muted mt-3">Click to analyze your data and generate insights</p>
                             </div>
                             
                             <div id="reportContent" style="display: none;">
