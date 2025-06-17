@@ -27,21 +27,7 @@
         </div>
     </div>
 
-    <!-- Email Confirmation Banner -->
-    {% if report_sent and client_email %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="alert alert-success d-flex align-items-center" role="alert">
-                <i class="fas fa-check-circle me-3 fs-5"></i>
-                <div>
-                    <h6 class="alert-heading mb-1">Report Successfully Delivered!</h6>
-                    <p class="mb-0">Your comprehensive business intelligence report has been emailed to <strong>{{ client_email }}</strong>. 
-                    Check your inbox for the secure download link.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+
 
     <!-- Tabs Navigation -->
     <div class="row">
@@ -88,8 +74,11 @@
                                 <button class="btn btn-primary btn-lg me-3" id="generateReportBtn">
                                     <i class="fas fa-magic me-2"></i>Generate AI Report
                                 </button>
-                                <button class="btn btn-success btn-lg" id="exportPdfBtn" style="display: none;">
+                                <button class="btn btn-success btn-lg me-2" id="exportPdfBtn" style="display: none;">
                                     <i class="fas fa-file-pdf me-2"></i>Export Report as PDF
+                                </button>
+                                <button class="btn btn-outline-primary btn-lg" id="emailReportBtn" style="display: none;">
+                                    <i class="fas fa-envelope me-2"></i>Email Report
                                 </button>
                                 <p class="text-muted mt-3">Click to analyze your data and generate insights</p>
                             </div>
