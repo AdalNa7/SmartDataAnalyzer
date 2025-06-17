@@ -79,6 +79,7 @@ function initializeFileUpload() {
 function initializeReportGeneration() {
     const generateBtn = document.getElementById('generateReportBtn');
     const exportBtn = document.getElementById('exportPdfBtn');
+    const emailBtn = document.getElementById('emailReportBtn');
     
     if (!generateBtn) return;
 
@@ -89,6 +90,12 @@ function initializeReportGeneration() {
     if (exportBtn) {
         exportBtn.addEventListener('click', function() {
             exportReportAsPDF();
+        });
+    }
+    
+    if (emailBtn) {
+        emailBtn.addEventListener('click', function() {
+            emailReport();
         });
     }
 }
