@@ -209,6 +209,8 @@ class ColumnMapper:
             # Process date column if present
             if 'date' in result_df.columns:
                 result_df['date'] = self._standardize_dates(result_df['date'])
+                # Remove rows with invalid dates
+                result_df = result_df.dropna(subset=['date'])
             
             # Ensure numeric columns are properly typed
             for col in ['quantity', 'price']:

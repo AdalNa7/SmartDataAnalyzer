@@ -89,19 +89,44 @@ def upload_file():
             else:
                 df = pd.read_excel(filepath)
             
-            # Validate data structure
-            is_valid, message = validate_sales_data(df)
+            # Intelligent validation and mapping
+            is_valid, validation_message, mapping_data = validate_sales_data(df)
             if not is_valid:
-                flash(f'Invalid data format: {message}', 'error')
+                flash(validation_message, 'error')
                 os.remove(filepath)  # Clean up
                 return redirect(url_for('index'))
             
-            # Store basic info in session
-            session['filename'] = filename
-            session['rows'] = len(df)
-            session['columns'] = list(df.columns)
-            session['filepath'] = filepath
+            # Use the standardized DataFrame from mapping
+            if mapping_data and 'dataframe' in mapping_data:
+                df = mapping_data['dataframe']
+            else:
+                raise ValueError("Failed to process column mapping")
             
+            # Save the processed DataFrame to a new file
+            processed_filepath = filepath.replace('.', '_processed.')
+            if filename.lower().endswith('.csv'):
+                df.to_csv(processed_filepath, index=False)
+            else:
+                df.to_excel(processed_filepath, index=False)
+            
+            # Store file information in session
+            session['filepath'] = processed_filepath
+            session['original_filepath'] = filepath
+            session['filename'] = filename
+            session['upload_time'] = datetime.now().isoformat()
+            session['total_rows'] = len(df)
+            session['columns'] = list(df.columns)
+            session['column_mapping'] = mapping_data['mapping']
+            session['mapping_confidence'] = mapping_data['confidence']
+            
+            # Show successful mapping information
+            mapping_info = f"Successfully mapped: "
+            for standard, original in mapping_data['mapping'].items():
+                conf = mapping_data['confidence'].get(standard, 0)
+                mapping_info += f"{standard}→{original} ({conf:.0%}), "
+            mapping_info = mapping_info.rstrip(', ')
+            
+            flash(f'Successfully uploaded {filename} with {len(df)} records. {mapping_info}', 'success')
             return redirect(url_for('dashboard'))
             
         except Exception as e:
