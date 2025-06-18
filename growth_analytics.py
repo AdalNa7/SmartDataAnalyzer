@@ -54,8 +54,12 @@ class GrowthAnalytics:
     
     def _process_data(self):
         """Process and clean data for analysis"""
-        if self.processed_df is None:
+        if self.processed_df is None or self.processed_df.empty:
+            print("GrowthAnalytics: No data to process - will use authentic uploaded data only")
             return
+        
+        print(f"GrowthAnalytics: Processing {len(self.processed_df)} rows")
+        print(f"GrowthAnalytics: Available columns: {list(self.processed_df.columns)}")
         
         # Convert date column if exists
         if 'date' in self.processed_df.columns:
@@ -65,8 +69,9 @@ class GrowthAnalytics:
                 self.processed_df['hour'] = self.processed_df['date'].dt.hour
                 self.processed_df['month'] = self.processed_df['date'].dt.month
                 self.processed_df['year'] = self.processed_df['date'].dt.year
-            except:
-                pass
+                print(f"GrowthAnalytics: Date column processed successfully")
+            except Exception as e:
+                print(f"GrowthAnalytics: Date processing error: {e}")
         
         # Calculate revenue if possible
         if 'price' in self.processed_df.columns and 'quantity' in self.processed_df.columns:
@@ -74,14 +79,23 @@ class GrowthAnalytics:
                 self.processed_df['price'] = pd.to_numeric(self.processed_df['price'], errors='coerce')
                 self.processed_df['quantity'] = pd.to_numeric(self.processed_df['quantity'], errors='coerce')
                 self.processed_df['revenue'] = self.processed_df['price'] * self.processed_df['quantity']
-            except:
-                pass
+                total_revenue = self.processed_df['revenue'].sum()
+                print(f"GrowthAnalytics: Revenue calculated - total: ${total_revenue:.2f}")
+            except Exception as e:
+                print(f"GrowthAnalytics: Revenue calculation error: {e}")
     
     def predict_revenue_trend(self):
         """Predict revenue trends using linear regression"""
         try:
+            print(f"GrowthAnalytics: Starting revenue prediction with {len(self.processed_df)} rows")
+            
+            # Force real data processing - no fallbacks for uploaded data
+            if self.processed_df.empty:
+                raise ValueError("No data available for revenue prediction")
+            
             if 'revenue' not in self.processed_df.columns or 'date' not in self.processed_df.columns:
-                return self._fallback_revenue_prediction()
+                print(f"GrowthAnalytics: Missing columns - available: {list(self.processed_df.columns)}")
+                raise ValueError("Revenue and date columns required for trend analysis")
             
             # Group by date and sum revenue
             daily_revenue = self.processed_df.groupby('date')['revenue'].sum().reset_index()

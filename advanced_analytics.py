@@ -35,9 +35,13 @@ class AdvancedAnalytics:
     def _prepare_data(self):
         """Prepare and standardize data for advanced analytics"""
         if self.df.empty:
+            print("AdvancedAnalytics: No data provided - will use fallback")
             return
         
         try:
+            print(f"AdvancedAnalytics: Preparing {len(self.df)} rows")
+            print(f"AdvancedAnalytics: Original columns: {list(self.df.columns)}")
+            
             # Standardize column names
             column_mapping = {}
             for col in self.df.columns:
@@ -79,8 +83,11 @@ class AdvancedAnalytics:
     def customer_segmentation(self):
         """Perform K-means customer segmentation"""
         try:
+            print(f"AdvancedAnalytics: Starting customer segmentation with {len(self.processed_df) if self.processed_df is not None else 0} rows")
+            
+            # Force real data processing - no fallbacks for uploaded data  
             if self.processed_df is None or self.processed_df.empty:
-                return self._fallback_segmentation()
+                raise ValueError("No data available for customer segmentation")
             
             # Prepare customer features
             if 'customer' not in self.processed_df.columns or 'revenue' not in self.processed_df.columns:

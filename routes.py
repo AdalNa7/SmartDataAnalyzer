@@ -620,7 +620,13 @@ def growth_analytics():
         else:
             df = pd.read_excel(filepath)
         
-        # Initialize growth analytics
+        # Validate data exists
+        if df.empty:
+            return jsonify({'error': 'No data found in uploaded file'}), 400
+        
+        print(f"Growth Analytics - Processing {len(df)} rows with columns: {list(df.columns)}")
+        
+        # Initialize growth analytics with real data
         analytics = GrowthAnalytics(df)
         
         # Generate all analytics including new advanced features
@@ -652,22 +658,24 @@ def growth_analytics():
 @app.route('/advanced-analytics')
 def advanced_analytics():
     """Generate advanced analytics including segmentation, forecasting, and health metrics"""
+    if 'filepath' not in session:
+        return jsonify({'error': 'No data available'}), 400
+    
     try:
-        df = None
+        # Load data from session using correct filepath key
+        filepath = session['filepath']
+        if filepath.lower().endswith('.csv'):
+            df = pd.read_csv(filepath)
+        else:
+            df = pd.read_excel(filepath)
         
-        # Try to get uploaded data from session
-        if 'uploaded_data' in session:
-            try:
-                file_path = session['uploaded_data']
-                if file_path.endswith('.csv'):
-                    df = pd.read_csv(file_path)
-                else:
-                    df = pd.read_excel(file_path)
-            except Exception as e:
-                print(f"Error loading uploaded data: {e}")
-                df = None
+        # Validate data exists
+        if df.empty:
+            return jsonify({'error': 'No data found in uploaded file'}), 400
         
-        # Initialize advanced analytics (will use fallback if df is None/empty)
+        print(f"Advanced Analytics - Processing {len(df)} rows with columns: {list(df.columns)}")
+        
+        # Initialize advanced analytics with real data
         analytics = AdvancedAnalytics(df)
         
         # Generate all advanced analytics
