@@ -52,7 +52,9 @@ class AdvancedAnalytics:
                     column_mapping[col] = 'quantity'
                 elif 'price' in col_lower or 'cost' in col_lower or 'value' in col_lower:
                     column_mapping[col] = 'price'
-                elif 'date' in col_lower or 'time' in col_lower:
+                elif 'date' in col_lower and 'date' not in column_mapping.values():
+                    column_mapping[col] = 'date'
+                elif 'time' in col_lower and 'date' not in column_mapping.values():
                     column_mapping[col] = 'date'
                 elif 'customer' in col_lower or 'client' in col_lower or 'user' in col_lower:
                     column_mapping[col] = 'customer'
@@ -89,9 +91,9 @@ class AdvancedAnalytics:
             if self.processed_df is None or self.processed_df.empty:
                 raise ValueError("No data available for customer segmentation")
             
-            # Prepare customer features
-            if 'customer' not in self.processed_df.columns or 'revenue' not in self.processed_df.columns:
-                return self._fallback_segmentation()
+            # Check if we have the required data for customer segmentation
+            if 'revenue' not in self.processed_df.columns:
+                raise ValueError("Customer segmentation requires revenue data from your uploaded file")
             
             customer_features = self.processed_df.groupby('customer').agg({
                 'revenue': ['sum', 'mean', 'count'],
@@ -166,7 +168,7 @@ class AdvancedAnalytics:
             
         except Exception as e:
             print(f"Customer segmentation error: {e}")
-            return self._fallback_segmentation()
+            raise ValueError(f"Unable to perform customer segmentation on your data: {e}")
     
     def _fallback_segmentation(self):
         """Fallback customer segmentation data"""
@@ -207,7 +209,7 @@ class AdvancedAnalytics:
             daily_sales = daily_sales.sort_values('date')
             
             if len(daily_sales) < 7:  # Need at least a week of data
-                return self._fallback_forecast()
+                raise ValueError("Forecasting requires at least 7 days of sales data")
             
             # Try Prophet first
             if PROPHET_AVAILABLE:

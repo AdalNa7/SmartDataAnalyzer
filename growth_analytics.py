@@ -43,7 +43,10 @@ class GrowthAnalytics:
             elif 'price' in col_lower or 'cost' in col_lower or 'value' in col_lower:
                 column_mapping[col] = 'price'
                 self.price_col = col
-            elif 'date' in col_lower or 'time' in col_lower:
+            elif 'date' in col_lower and 'date' not in column_mapping.values():
+                column_mapping[col] = 'date'
+                self.date_col = col
+            elif 'time' in col_lower and 'date' not in column_mapping.values():
                 column_mapping[col] = 'date'
                 self.date_col = col
         
@@ -87,11 +90,10 @@ class GrowthAnalytics:
     def predict_revenue_trend(self):
         """Predict revenue trends using linear regression"""
         try:
-            print(f"GrowthAnalytics: Starting revenue prediction with {len(self.processed_df)} rows")
-            
-            # Force real data processing - no fallbacks for uploaded data
-            if self.processed_df.empty:
+            if self.processed_df is None or self.processed_df.empty:
                 raise ValueError("No data available for revenue prediction")
+                
+            print(f"GrowthAnalytics: Starting revenue prediction with {len(self.processed_df)} rows")
             
             if 'revenue' not in self.processed_df.columns or 'date' not in self.processed_df.columns:
                 print(f"GrowthAnalytics: Missing columns - available: {list(self.processed_df.columns)}")
@@ -161,7 +163,8 @@ class GrowthAnalytics:
             }
             
         except Exception as e:
-            return self._fallback_revenue_prediction()
+            print(f"Revenue prediction error: {e}")
+            raise ValueError(f"Unable to analyze revenue trends from your data: {e}")
     
     def _fallback_revenue_prediction(self):
         """Fallback prediction when data is insufficient"""
@@ -188,8 +191,11 @@ class GrowthAnalytics:
     def get_top_products(self):
         """Analyze top performing products by revenue"""
         try:
+            if self.processed_df is None or self.processed_df.empty:
+                raise ValueError("No data available for product analysis")
+                
             if 'product' not in self.processed_df.columns or 'revenue' not in self.processed_df.columns:
-                return self._fallback_top_products()
+                raise ValueError("Product and revenue columns required for analysis")
             
             product_performance = self.processed_df.groupby('product').agg({
                 'revenue': 'sum',
@@ -233,7 +239,8 @@ class GrowthAnalytics:
             }
             
         except Exception as e:
-            return self._fallback_top_products()
+            print(f"Top products analysis error: {e}")
+            raise ValueError(f"Unable to analyze top products from your data: {e}")
     
     def _fallback_top_products(self):
         """Fallback top products when data is insufficient"""

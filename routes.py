@@ -647,12 +647,14 @@ def growth_analytics():
     except ValueError as e:
         return jsonify({
             'error': 'Data validation failed',
-            'message': str(e)
+            'message': str(e),
+            'note': 'This analysis requires authentic data from your uploaded file.'
         }), 400
     except Exception as e:
         return jsonify({
-            'error': 'Analytics processing failed',
-            'message': f'Error analyzing your data: {str(e)}'
+            'error': 'Analytics processing failed', 
+            'message': f'Error analyzing your data: {str(e)}',
+            'note': 'Please ensure your file has the required columns: product, price, quantity, date.'
         }), 500
 
 @app.route('/advanced-analytics')
@@ -688,16 +690,19 @@ def advanced_analytics():
         
         return jsonify(result)
         
+    except ValueError as e:
+        return jsonify({
+            'error': 'Data validation failed',
+            'message': str(e),
+            'note': 'Advanced analytics requires authentic data from your uploaded file.'
+        }), 400
     except Exception as e:
         print(f"Advanced analytics error: {e}")
-        # Return fallback analytics on error
-        fallback_analytics = AdvancedAnalytics(pd.DataFrame())
         return jsonify({
-            'customer_segmentation': fallback_analytics.customer_segmentation(),
-            'forecast': fallback_analytics.smart_forecast(),
-            'data_health': fallback_analytics.data_health_score(),
-            'growth_metrics': fallback_analytics.growth_metrics()
-        })
+            'error': 'Advanced analytics processing failed',
+            'message': f'Error analyzing your data: {str(e)}',
+            'note': 'Please ensure your file has the required columns: product, price, quantity, date.'
+        }), 500
 
 @app.route('/send-report', methods=['POST'])
 def send_report():
