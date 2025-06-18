@@ -83,11 +83,47 @@ def upload_file():
         file.save(filepath)
         
         try:
-            # Read the file based on extension
+            # Read the file based on extension with improved handling
             if filename.lower().endswith('.csv'):
                 df = pd.read_csv(filepath)
             else:
-                df = pd.read_excel(filepath)
+                # Try different approaches for Excel files
+                try:
+                    # First check if there are multiple sheets
+                    xl_file = pd.read_excel(filepath, sheet_name=None)
+                    sheets = list(xl_file.keys())
+                    print(f"Found {len(sheets)} sheets: {sheets}")
+                    
+                    # Look for sheets that might contain sales data
+                    sales_sheet = None
+                    for sheet_name in sheets:
+                        sheet_df = xl_file[sheet_name]
+                        if len(sheet_df) > 5:  # Has some data
+                            # Check if columns look like sales data
+                            cols_str = ' '.join(str(col).lower() for col in sheet_df.columns)
+                            if any(keyword in cols_str for keyword in ['product', 'item', 'sales', 'price', 'qty', 'quantity', 'order']):
+                                sales_sheet = sheet_name
+                                df = sheet_df
+                                print(f"Using sheet '{sheet_name}' which appears to contain sales data")
+                                break
+                    
+                    # If no sales sheet found, use the largest sheet
+                    if sales_sheet is None:
+                        largest_sheet = max(sheets, key=lambda s: len(xl_file[s]))
+                        df = xl_file[largest_sheet]
+                        print(f"No clear sales sheet found, using largest sheet: '{largest_sheet}'")
+                        
+                    # If we get unnamed columns, try reading without headers
+                    if any('Unnamed:' in str(col) for col in df.columns):
+                        print("Detected unnamed columns, trying alternative Excel read")
+                        df = pd.read_excel(filepath, sheet_name=sales_sheet or 0, header=None)
+                        
+                except Exception as e:
+                    print(f"Excel read failed: {e}, trying without headers")
+                    df = pd.read_excel(filepath, header=None)
+                    
+            print(f"File loaded: {df.shape[0]} rows, {df.shape[1]} columns")
+            print(f"Columns: {list(df.columns)}")
             
             # Intelligent validation and mapping
             is_valid, validation_message, mapping_data = validate_sales_data(df)

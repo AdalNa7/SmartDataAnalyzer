@@ -68,6 +68,50 @@ class ColumnMapper:
         # Get actual column names from DataFrame
         actual_columns = list(df.columns)
         
+        # Handle case where columns are unnamed (like "Unnamed: 0", "Unnamed: 1") or numeric
+        if any('Unnamed:' in str(col) or str(col).isdigit() for col in actual_columns):
+            print(f"ColumnMapper: Detected problematic columns: {actual_columns}")
+            
+            # Find the first row with meaningful data to use as headers
+            header_row_idx = None
+            for i in range(min(10, len(df))):
+                row = df.iloc[i]
+                non_null_values = row.dropna().astype(str).tolist()
+                clean_values = [v.strip() for v in non_null_values if v.strip() and v != 'nan']
+                
+                if len(clean_values) >= 3 and not all(v.isdigit() for v in clean_values):
+                    header_row_idx = i
+                    print(f"ColumnMapper: Found potential headers at row {i}: {clean_values}")
+                    break
+            
+            if header_row_idx is not None:
+                # Use this row as headers
+                header_row = df.iloc[header_row_idx]
+                new_columns = [str(col).strip() if str(col) != 'nan' else f'Col_{i}' for i, col in enumerate(header_row)]
+                
+                # Create new DataFrame starting from the row after headers
+                new_df = df.iloc[header_row_idx + 1:].copy()
+                new_df.columns = new_columns[:len(new_df.columns)]
+                new_df = new_df.reset_index(drop=True)
+                
+                # Remove completely empty rows and columns
+                new_df = new_df.dropna(how='all').dropna(axis=1, how='all')
+                
+                print(f"ColumnMapper: Created cleaned DataFrame with shape {new_df.shape}")
+                print(f"ColumnMapper: New columns: {list(new_df.columns)}")
+                
+                if len(new_df) > 0 and len(new_df.columns) >= 3:
+                    return self.detect_column_mapping(new_df)
+            
+            # If we can't find good headers, create a meaningful error
+            result['errors'].append("Unable to detect proper column headers in the uploaded file")
+            result['suggestions'] = {
+                'help': 'Please ensure your file has clear column headers and data'
+            }
+            return result
+        
+        print(f"ColumnMapper: Processing columns: {actual_columns}")
+        
         # Try to map each required field
         for field_type, patterns in self.column_patterns.items():
             best_match, confidence = self._find_best_match(actual_columns, patterns)
