@@ -13,10 +13,12 @@ from email_service import EmailService
 from growth_analytics import GrowthAnalytics
 from advanced_analytics import AdvancedAnalytics
 from data_cleaner import SmartDataCleaner
+from column_mapper import ColumnMapper
 
 # Initialize services
 enhanced_pdf_generator = EnhancedPDFGenerator()
 email_service = EmailService()
+column_mapper = ColumnMapper()
 
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
@@ -24,14 +26,40 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def validate_sales_data(df):
-    """Validate that the uploaded data has required columns for sales analysis"""
-    required_columns = ['product', 'quantity', 'price', 'date']
-    missing_columns = [col for col in required_columns if col not in df.columns.str.lower()]
+    """Intelligent validation and mapping of uploaded sales data"""
+    # Check if DataFrame is empty
+    if df.empty:
+        return False, "The uploaded file appears to be empty", None
     
-    if missing_columns:
-        return False, f"Missing required columns: {', '.join(missing_columns)}"
+    # Detect column mappings
+    mapping_result = column_mapper.detect_column_mapping(df)
     
-    return True, "Data validation successful"
+    # Check if all required fields were found
+    is_valid, missing_fields = column_mapper.validate_required_fields(mapping_result['mappings'])
+    
+    if not is_valid:
+        error_msg = f"Could not automatically detect required columns: {', '.join(missing_fields)}. "
+        
+        # Provide suggestions if available
+        if mapping_result['suggestions']:
+            error_msg += "Suggestions: "
+            for field, suggestions in mapping_result['suggestions'].items():
+                if suggestions:
+                    error_msg += f"{field} → {', '.join(suggestions[:2])}; "
+        
+        error_msg += "Please ensure your file has columns for: product, quantity, price, date"
+        return False, error_msg, mapping_result
+    
+    # Apply the mapping to create standardized DataFrame
+    try:
+        standardized_df = column_mapper.apply_mapping(df, mapping_result['mappings'])
+        return True, f"Successfully mapped columns: {mapping_result['mappings']}", {
+            'dataframe': standardized_df,
+            'mapping': mapping_result['mappings'],
+            'confidence': mapping_result['confidence']
+        }
+    except Exception as e:
+        return False, f"Error processing data: {str(e)}", mapping_result
 
 @app.route('/')
 def index():
