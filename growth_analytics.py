@@ -67,7 +67,8 @@ class GrowthAnalytics:
         # Convert date column if exists
         if 'date' in self.processed_df.columns:
             try:
-                self.processed_df['date'] = pd.to_datetime(self.processed_df['date'])
+                # Handle multiple date formats including YYYY/MM/DD and YYYY-MM-DD
+                self.processed_df['date'] = pd.to_datetime(self.processed_df['date'], format='mixed', dayfirst=False)
                 self.processed_df['day_of_week'] = self.processed_df['date'].dt.day_name()
                 self.processed_df['hour'] = self.processed_df['date'].dt.hour
                 self.processed_df['month'] = self.processed_df['date'].dt.month
@@ -75,6 +76,12 @@ class GrowthAnalytics:
                 print(f"GrowthAnalytics: Date column processed successfully")
             except Exception as e:
                 print(f"GrowthAnalytics: Date processing error: {e}")
+                # Try alternative parsing methods
+                try:
+                    self.processed_df['date'] = pd.to_datetime(self.processed_df['date'], infer_datetime_format=True)
+                    print(f"GrowthAnalytics: Date column processed with infer format")
+                except Exception as e2:
+                    print(f"GrowthAnalytics: Date parsing failed completely: {e2}")
         
         # Calculate revenue if possible
         if 'price' in self.processed_df.columns and 'quantity' in self.processed_df.columns:
@@ -99,13 +106,19 @@ class GrowthAnalytics:
                 print(f"GrowthAnalytics: Missing columns - available: {list(self.processed_df.columns)}")
                 raise ValueError("Revenue and date columns required for trend analysis")
             
+            # Ensure dates are properly converted and clean data
+            valid_data = self.processed_df.dropna(subset=['date', 'revenue'])
+            if len(valid_data) == 0:
+                raise ValueError("No valid date and revenue data found")
+            
             # Group by date and sum revenue
-            daily_revenue = self.processed_df.groupby('date')['revenue'].sum().reset_index()
+            daily_revenue = valid_data.groupby('date')['revenue'].sum().reset_index()
             
             if len(daily_revenue) < 5:
-                return self._fallback_revenue_prediction()
+                raise ValueError("Insufficient data for trend analysis - need at least 5 data points")
             
-            # Prepare data for regression
+            # Prepare data for regression - ensure dates are datetime objects
+            daily_revenue = daily_revenue.sort_values('date')
             daily_revenue['days_since_start'] = (daily_revenue['date'] - daily_revenue['date'].min()).dt.days
             
             X = daily_revenue[['days_since_start']]
@@ -197,7 +210,12 @@ class GrowthAnalytics:
             if 'product' not in self.processed_df.columns or 'revenue' not in self.processed_df.columns:
                 raise ValueError("Product and revenue columns required for analysis")
             
-            product_performance = self.processed_df.groupby('product').agg({
+            # Clean data before analysis
+            valid_data = self.processed_df.dropna(subset=['product', 'revenue'])
+            if len(valid_data) == 0:
+                raise ValueError("No valid product and revenue data found")
+            
+            product_performance = valid_data.groupby('product').agg({
                 'revenue': 'sum',
                 'quantity': 'sum'
             }).reset_index().sort_values('revenue', ascending=False)

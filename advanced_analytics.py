@@ -65,9 +65,21 @@ class AdvancedAnalytics:
             if 'quantity' in self.processed_df.columns and 'price' in self.processed_df.columns:
                 self.processed_df['revenue'] = self.processed_df['quantity'] * self.processed_df['price']
             
-            # Parse dates
+            # Parse dates with flexible format handling
             if 'date' in self.processed_df.columns:
-                self.processed_df['date'] = pd.to_datetime(self.processed_df['date'], errors='coerce')
+                try:
+                    # Handle multiple date formats including YYYY/MM/DD and YYYY-MM-DD
+                    self.processed_df['date'] = pd.to_datetime(self.processed_df['date'], format='mixed', dayfirst=False)
+                    print(f"AdvancedAnalytics: Date column processed successfully")
+                except Exception as e:
+                    print(f"AdvancedAnalytics: Date processing error: {e}")
+                    try:
+                        self.processed_df['date'] = pd.to_datetime(self.processed_df['date'], infer_datetime_format=True)
+                        print(f"AdvancedAnalytics: Date column processed with infer format")
+                    except Exception as e2:
+                        print(f"AdvancedAnalytics: Date parsing failed completely: {e2}")
+                        self.processed_df['date'] = pd.to_datetime(self.processed_df['date'], errors='coerce')
+                
                 self.processed_df = self.processed_df.dropna(subset=['date'])
                 self.processed_df['day_of_week'] = self.processed_df['date'].dt.day_name()
                 self.processed_df['month'] = self.processed_df['date'].dt.month
