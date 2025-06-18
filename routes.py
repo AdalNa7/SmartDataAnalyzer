@@ -146,9 +146,12 @@ def dashboard():
         return redirect(url_for('index'))
     
     return render_template('dashboard.html', 
-                         filename=session['filename'],
-                         rows=session['rows'],
-                         columns=session['columns'])
+                         filename=session.get('filename'),
+                         upload_time=session.get('upload_time'),
+                         total_rows=session.get('total_rows'),
+                         columns=session.get('columns'),
+                         column_mapping=session.get('column_mapping'),
+                         mapping_confidence=session.get('mapping_confidence'))
 
 def analyze_sales_data(df):
     """Comprehensive sales data analysis using pandas"""

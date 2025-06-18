@@ -230,7 +230,7 @@ class ColumnMapper:
         """Convert various date formats to standard datetime"""
         # Try pandas built-in parsing first
         try:
-            return pd.to_datetime(date_series, infer_datetime_format=True, errors='coerce')
+            return pd.to_datetime(date_series, errors='coerce')
         except:
             pass
         

@@ -12,11 +12,21 @@
                     <h2 class="mb-1">
                         <i class="fas fa-chart-bar text-primary me-2"></i>Data Analysis Dashboard
                     </h2>
-                    <p class="text-muted mb-0">
-                        <i class="fas fa-file me-1"></i>{{ filename }} 
-                        <span class="mx-2">•</span>
-                        <i class="fas fa-table me-1"></i>{{ rows }} rows, {{ columns|length }} columns
-                    </p>
+                    <div class="d-flex flex-column">
+                        <p class="text-muted mb-1">
+                            <i class="fas fa-file me-1"></i>{{ filename }} 
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-table me-1"></i>{{ total_rows }} rows, {{ columns|length }} columns
+                        </p>
+                        {% if column_mapping %}
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-magic me-1"></i>Smart mapping: 
+                            {% for field, original in column_mapping.items() %}
+                                <span class="badge bg-primary me-1">{{ field }}→{{ original }}</span>
+                            {% endfor %}
+                        </p>
+                        {% endif %}
+                    </div>
                 </div>
                 <div>
                     <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
