@@ -366,45 +366,81 @@ class GrowthAnalytics:
         }
     
     def find_missed_opportunities(self):
-        """Identify missed revenue opportunities"""
+        """Identify missed revenue opportunities from your actual data"""
         try:
+            if self.processed_df is None or self.processed_df.empty:
+                raise ValueError("No data available for missed opportunities analysis")
+            
+            if not all(col in self.processed_df.columns for col in ['quantity', 'price', 'product']):
+                raise ValueError("Product, price, and quantity columns required for missed opportunities analysis")
+            
             missed_opportunities = []
             total_missed_revenue = 0.0
             
-            if (hasattr(self, 'processed_df') and self.processed_df is not None and 
-                'quantity' in self.processed_df.columns and 'price' in self.processed_df.columns and 
-                'product' in self.processed_df.columns):
+            print(f"GrowthAnalytics: Analyzing missed opportunities from {len(self.processed_df)} rows")
+            
+            # Clean the data first
+            valid_data = self.processed_df.dropna(subset=['product', 'price', 'quantity'])
+            
+            # Strategy 1: Find products with zero quantity (potential stockouts)
+            zero_qty = valid_data[
+                (valid_data['quantity'] == 0) & 
+                (valid_data['price'] > 0)
+            ]
+            
+            if not zero_qty.empty:
+                print(f"GrowthAnalytics: Found {len(zero_qty)} stockout opportunities")
+                missed_summary = zero_qty.groupby('product').agg({
+                    'price': 'mean',
+                    'quantity': 'count'  # Count of stockout instances
+                }).reset_index()
                 
-                # Find products with zero quantity but listed price
-                zero_qty = self.processed_df[
-                    (self.processed_df['quantity'] == 0) & 
-                    (self.processed_df['price'] > 0)
+                for _, row in missed_summary.iterrows():
+                    # Estimate potential revenue (stockout instances * average price)
+                    potential_revenue = float(row['price'] * row['quantity'])
+                    missed_opportunities.append({
+                        'product': str(row['product']),
+                        'missed_sales': int(row['quantity']),
+                        'avg_price': float(row['price']),
+                        'potential_revenue': potential_revenue,
+                        'type': 'Stockout'
+                    })
+                    total_missed_revenue += potential_revenue
+            
+            # Strategy 2: Find low-performing products with high prices (underutilized potential)
+            product_stats = valid_data.groupby('product').agg({
+                'quantity': 'sum',
+                'price': 'mean',
+                'revenue': 'sum'
+            }).reset_index()
+            
+            if len(product_stats) > 1:
+                # Find products with below-median sales but above-median prices
+                median_quantity = product_stats['quantity'].median()
+                median_price = product_stats['price'].median()
+                
+                underperformers = product_stats[
+                    (product_stats['quantity'] < median_quantity) & 
+                    (product_stats['price'] > median_price)
                 ]
                 
-                if not zero_qty.empty:
-                    missed_summary = zero_qty.groupby('product').agg({
-                        'price': 'mean',
-                        'quantity': 'count'  # Count of missed sales opportunities
-                    }).reset_index()
-                    
-                    for _, row in missed_summary.iterrows():
-                        potential_revenue = float(row['price'] * row['quantity'])
+                for _, row in underperformers.iterrows():
+                    # Potential if they sold at median level
+                    potential_quantity = int(median_quantity - row['quantity'])
+                    if potential_quantity > 0:
+                        potential_revenue = float(potential_quantity * row['price'])
                         missed_opportunities.append({
                             'product': str(row['product']),
-                            'missed_sales': int(row['quantity']),
+                            'missed_sales': potential_quantity,
                             'avg_price': float(row['price']),
-                            'potential_revenue': potential_revenue
+                            'potential_revenue': potential_revenue,
+                            'type': 'Underperformed'
                         })
                         total_missed_revenue += potential_revenue
             
-            # Fallback if no data
+            # If no missed opportunities found in actual data, that's a good thing!
             if not missed_opportunities:
-                missed_opportunities = [
-                    {'product': 'Wireless Mouse', 'missed_sales': 8, 'avg_price': 45.99, 'potential_revenue': 367.92},
-                    {'product': 'USB Cable', 'missed_sales': 15, 'avg_price': 12.99, 'potential_revenue': 194.85},
-                    {'product': 'Phone Case', 'missed_sales': 6, 'avg_price': 24.99, 'potential_revenue': 149.94}
-                ]
-                total_missed_revenue = sum(opp['potential_revenue'] for opp in missed_opportunities)
+                print("GrowthAnalytics: No missed opportunities found - this is good news!")
             
             return {
                 'opportunities': missed_opportunities,
@@ -413,16 +449,8 @@ class GrowthAnalytics:
             }
             
         except Exception as e:
-            # Return safe fallback data
-            fallback_opportunities = [
-                {'product': 'Wireless Mouse', 'missed_sales': 8, 'avg_price': 45.99, 'potential_revenue': 367.92},
-                {'product': 'USB Cable', 'missed_sales': 15, 'avg_price': 12.99, 'potential_revenue': 194.85}
-            ]
-            return {
-                'opportunities': fallback_opportunities,
-                'total_missed_revenue': 562.77,
-                'count': 2
-            }
+            print(f"Missed opportunities analysis error: {e}")
+            raise ValueError(f"Unable to analyze missed opportunities from your data: {e}")
     
     def get_data_quality_summary(self):
         """Analyze data quality issues"""
