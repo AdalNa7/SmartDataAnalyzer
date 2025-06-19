@@ -1,18 +1,62 @@
 import os
+import subprocess
 import glob
 
-# Fix NumPy library path issue before importing app
-lib_paths = []
-for pattern in ["/nix/store/*/lib", "/nix/store/*/lib64"]:
-    lib_paths.extend(glob.glob(pattern))
+# Configure library path before importing NumPy-dependent modules
+def setup_cpp_libraries():
+    """Set up LD_LIBRARY_PATH to include C++ standard library"""
+    lib_dirs = set()
+    
+    # Priority 1: Find libstdc++.so.6 specifically
+    try:
+        result = subprocess.run(['find', '/nix/store', '-name', 'libstdc++.so.6', '-type', 'f'], 
+                              capture_output=True, text=True, timeout=8)
+        if result.stdout.strip():
+            for lib_path in result.stdout.strip().split('\n')[:3]:
+                if lib_path:
+                    lib_dirs.add(os.path.dirname(lib_path))
+    except:
+        pass
+    
+    # Priority 2: Find zlib library
+    try:
+        result = subprocess.run(['find', '/nix/store', '-name', 'libz.so*', '-type', 'f'], 
+                              capture_output=True, text=True, timeout=5)
+        if result.stdout.strip():
+            for lib_path in result.stdout.strip().split('\n')[:2]:
+                if lib_path and 'libz.so' in lib_path:
+                    lib_dirs.add(os.path.dirname(lib_path))
+    except:
+        pass
+    
+    # Priority 3: Add gcc library paths
+    for pattern in ["/nix/store/*gcc*/lib", "/nix/store/*gcc*/lib64"]:
+        paths = glob.glob(pattern)
+        for path in paths[:5]:
+            if os.path.exists(path):
+                lib_dirs.add(path)
+    
+    # Priority 4: Add standard system library directories
+    for pattern in ["/nix/store/*/lib", "/nix/store/*/lib64"]:
+        paths = glob.glob(pattern)
+        for path in paths[:10]:  # Limit to prevent timeout
+            if os.path.exists(path):
+                lib_dirs.add(path)
+    
+    if lib_dirs:
+        current_ld = os.environ.get('LD_LIBRARY_PATH', '')
+        new_ld_path = ':'.join(sorted(lib_dirs))
+        if current_ld:
+            new_ld_path = f"{new_ld_path}:{current_ld}"
+        os.environ['LD_LIBRARY_PATH'] = new_ld_path
+        print(f"Configured {len(lib_dirs)} library paths for NumPy")
+        return True
+    
+    print("No library paths found")
+    return False
 
-existing_paths = [p for p in lib_paths if os.path.exists(p)]
-if existing_paths:
-    current_ld_path = os.environ.get('LD_LIBRARY_PATH', '')
-    new_ld_path = ':'.join(existing_paths)
-    if current_ld_path:
-        new_ld_path = f"{new_ld_path}:{current_ld_path}"
-    os.environ['LD_LIBRARY_PATH'] = new_ld_path
+# Setup libraries before any imports
+setup_cpp_libraries()
 
 from app import app
 
