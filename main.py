@@ -5,28 +5,23 @@ import sys
 os.environ['FLASK_ENV'] = 'development'
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-# Critical: Remove any numpy directories from current working directory
+# Critical: Remove any numpy-related directories from current working directory
 import shutil
 for item in os.listdir('.'):
     if 'numpy' in item.lower() and os.path.isdir(item):
         try:
             shutil.rmtree(item)
-            print(f"Removed conflicting directory: {item}")
+            print(f"Removed numpy conflict: {item}")
         except:
             pass
 
-# Configure comprehensive library paths for NumPy
-lib_paths = []
-for path in ['/nix/store/4w85zw8hd3j2y89fm1j40wgh4kpjgxy7-gcc-12.3.0-lib/lib',
-             '/nix/store/k7zgvzp2r31zkg9xqgjim7mbknryv6bs-glibc-2.39-52/lib',
-             '/nix/store/1ap8g92l5mjbn1z1bw1z0siq1g8fpnqa-openblas-0.3.27/lib',
-             '/usr/lib', '/lib']:
-    if os.path.exists(path):
-        lib_paths.append(path)
+# Temporarily change to /tmp during imports to avoid source directory conflicts
+original_cwd = os.getcwd()
+os.chdir('/tmp')
 
-if lib_paths:
-    os.environ['LD_LIBRARY_PATH'] = ':'.join(lib_paths)
-    print(f"Configured {len(lib_paths)} library paths for NumPy")
+# Clean and configure environment
+sys.path = [p for p in sys.path if not ('numpy' in p and 'site-packages' not in p)]
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 try:
     from app import app
