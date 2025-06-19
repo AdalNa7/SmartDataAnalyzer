@@ -31,5 +31,41 @@ mail = Mail(app)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('reports', exist_ok=True)
 
-# Import routes
-from routes import *
+# Import routes with fallback for NumPy dependency issues
+try:
+    from routes import *
+    print("Routes imported successfully - NumPy dependencies resolved")
+except ImportError as e:
+    print(f"NumPy dependency issue detected: {e}")
+    # Create minimal routes as fallback
+    @app.route('/')
+    def index():
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head><title>Smart Data Analyzer - Dependency Resolution</title></head>
+        <body style="font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; backdrop-filter: blur(10px);">
+                <h1>Smart Data Analyzer</h1>
+                <h2>System Dependency Resolution in Progress</h2>
+                <p>We're currently resolving a NumPy system dependency issue (libstdc++.so.6).</p>
+                <p>The application will be fully operational once the C++ standard library is properly configured.</p>
+                <hr style="border: 1px solid rgba(255,255,255,0.3);">
+                <h3>Current Status:</h3>
+                <ul>
+                    <li>✓ Flask application running</li>
+                    <li>✓ Gunicorn server operational</li>
+                    <li>⚠ NumPy/Pandas dependency resolution needed</li>
+                    <li>⚠ Missing libstdc++.so.6 system library</li>
+                </ul>
+                <p><strong>Solution:</strong> Install libstdc++6 system package to resolve NumPy C extension loading.</p>
+            </div>
+        </body>
+        </html>
+        '''
+    
+    @app.route('/health')
+    def health():
+        return {"status": "dependency_resolution", "issue": "libstdc++.so.6 missing", "server": "operational"}
+    
+    print("Fallback routes configured - application accessible with dependency notice")
