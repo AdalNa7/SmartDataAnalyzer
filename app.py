@@ -31,41 +31,21 @@ mail = Mail(app)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('reports', exist_ok=True)
 
-# Import routes with fallback for NumPy dependency issues
-try:
-    from routes import *
-    print("Routes imported successfully - NumPy dependencies resolved")
-except ImportError as e:
-    print(f"NumPy dependency issue detected: {e}")
-    # Create minimal routes as fallback
-    @app.route('/')
-    def index():
-        return '''
-        <!DOCTYPE html>
-        <html>
-        <head><title>Smart Data Analyzer - Dependency Resolution</title></head>
-        <body style="font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; backdrop-filter: blur(10px);">
-                <h1>Smart Data Analyzer</h1>
-                <h2>System Dependency Resolution in Progress</h2>
-                <p>We're currently resolving a NumPy system dependency issue (libstdc++.so.6).</p>
-                <p>The application will be fully operational once the C++ standard library is properly configured.</p>
-                <hr style="border: 1px solid rgba(255,255,255,0.3);">
-                <h3>Current Status:</h3>
-                <ul>
-                    <li>✓ Flask application running</li>
-                    <li>✓ Gunicorn server operational</li>
-                    <li>⚠ NumPy/Pandas dependency resolution needed</li>
-                    <li>⚠ Missing libstdc++.so.6 system library</li>
-                </ul>
-                <p><strong>Solution:</strong> Install libstdc++6 system package to resolve NumPy C extension loading.</p>
-            </div>
-        </body>
-        </html>
-        '''
-    
-    @app.route('/health')
-    def health():
-        return {"status": "dependency_resolution", "issue": "libstdc++.so.6 missing", "server": "operational"}
-    
-    print("Fallback routes configured - application accessible with dependency notice")
+# Configure environment for NumPy before importing routes
+import os
+import glob
+
+# Set up comprehensive library paths
+lib_dirs = []
+for pattern in ["/nix/store/*/lib", "/nix/store/*/lib64"]:
+    lib_dirs.extend(glob.glob(pattern))
+
+if lib_dirs:
+    current_ld = os.environ.get('LD_LIBRARY_PATH', '')
+    new_ld_path = ':'.join(lib_dirs[:30])  # Limit paths
+    if current_ld:
+        new_ld_path = f"{new_ld_path}:{current_ld}"
+    os.environ['LD_LIBRARY_PATH'] = new_ld_path
+
+# Import routes
+from routes import *

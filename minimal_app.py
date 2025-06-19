@@ -61,10 +61,10 @@ def upload_file():
         session['client_email'] = client_email
         session['original_filename'] = file.filename
         
-        flash('File uploaded successfully! NumPy analysis will be available once dependencies are resolved.')
+        flash('File uploaded successfully! NumPy analysis will be available once dependencies are resolved.', 'success')
         return redirect(url_for('dashboard'))
     
-    flash('Invalid file format. Please upload CSV, XLSX, or XLS files.')
+    flash('Invalid file format. Please upload CSV, XLSX, or XLS files.', 'error')
     return redirect(url_for('index'))
 
 @app.route('/dashboard')
