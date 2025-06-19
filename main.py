@@ -1,14 +1,22 @@
 import os
 import sys
 
-# Clean environment setup
+# Environment setup
 os.environ['FLASK_ENV'] = 'development'
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-# Use system Python packages to avoid library conflicts
-sys.path.insert(0, '/nix/store/*/lib/python3.11/site-packages')
+# Configure C++ library path for NumPy
+os.environ['LD_LIBRARY_PATH'] = '/nix/store/4w85zw8hd3j2y89fm1j40wgh4kpjgxy7-gcc-12.3.0-lib/lib:/nix/store/k7zgvzp2r31zkg9xqgjim7mbknryv6bs-glibc-2.39-52/lib:/nix/store/3n5j4b4x8ql91srrjwsq0f8x7f4c8jzn-zlib-1.3.1/lib'
 
-print("Using system NumPy installation to resolve library conflicts")
+# Test NumPy functionality before app startup  
+try:
+    import numpy as np
+    import pandas as pd
+    print(f"NumPy {np.__version__} and Pandas {pd.__version__} working")
+    NUMPY_WORKING = True
+except Exception:
+    print("NumPy not available - using minimal app mode")
+    NUMPY_WORKING = False
 
 try:
     from app import app
