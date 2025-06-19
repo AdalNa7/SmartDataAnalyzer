@@ -46,7 +46,7 @@ def upload_file():
         return redirect(url_for('index'))
     
     if not client_email:
-        flash('Client email is required')
+        flash('Please enter your email address for report delivery', 'warning')
         return redirect(url_for('index'))
     
     if file and allowed_file(file.filename):
