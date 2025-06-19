@@ -1,27 +1,14 @@
 import os
 import sys
 
-# Set up environment before any imports
+# Clean environment setup
 os.environ['FLASK_ENV'] = 'development'
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-# Critical: Remove any numpy-related directories from current working directory
-import shutil
-for item in os.listdir('.'):
-    if 'numpy' in item.lower() and os.path.isdir(item):
-        try:
-            shutil.rmtree(item)
-            print(f"Removed numpy conflict: {item}")
-        except:
-            pass
-
-# Temporarily change to /tmp during imports to avoid source directory conflicts
-original_cwd = os.getcwd()
-os.chdir('/tmp')
-
-# Clean and configure environment
-sys.path = [p for p in sys.path if not ('numpy' in p and 'site-packages' not in p)]
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+# Ensure current directory is in path for app imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
 try:
     from app import app
