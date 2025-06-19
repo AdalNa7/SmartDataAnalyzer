@@ -2,7 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["blas", "freetype", "gcc", "gcc-unwrapped", "gfortran", "glibc", "glibcLocales", "lapack", "libgcc", "libstdcxx5", "openblas", "openssl", "postgresql"]
+packages = ["blas", "freetype", "gcc", "gcc-unwrapped", "gfortran", "glibc", "glibcLocales", "lapack", "libgcc", "libgccjit", "libstdcxx5", "openblas", "openssl", "postgresql"]
 
 [deployment]
 deploymentTarget = "autoscale"
