@@ -1,8 +1,20 @@
 import os
 import sys
-# Ensure we're not in numpy source directory
-if '/workspace' in sys.path:
-    sys.path = [p for p in sys.path if '/workspace' not in p or p == '/home/runner/workspace']
+import glob
+
+# Set library path for NumPy before importing pandas
+lib_paths = []
+for pattern in ["/nix/store/*/lib", "/nix/store/*/lib64"]:
+    lib_paths.extend(glob.glob(pattern))
+
+existing_paths = [p for p in lib_paths if os.path.exists(p)]
+if existing_paths:
+    current_ld_path = os.environ.get('LD_LIBRARY_PATH', '')
+    new_ld_path = ':'.join(existing_paths)
+    if current_ld_path:
+        new_ld_path = f"{new_ld_path}:{current_ld_path}"
+    os.environ['LD_LIBRARY_PATH'] = new_ld_path
+
 import pandas as pd
 import numpy as np
 from flask import render_template, request, jsonify, flash, redirect, url_for, session, make_response, send_file, abort
