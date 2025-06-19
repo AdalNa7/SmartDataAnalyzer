@@ -1,4 +1,8 @@
 import os
+import sys
+# Ensure we're not in numpy source directory
+if '/workspace' in sys.path:
+    sys.path = [p for p in sys.path if '/workspace' not in p or p == '/home/runner/workspace']
 import pandas as pd
 import numpy as np
 from flask import render_template, request, jsonify, flash, redirect, url_for, session, make_response, send_file, abort
