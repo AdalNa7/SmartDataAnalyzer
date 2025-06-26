@@ -35,6 +35,11 @@ pip install -r requirements.txt
 ```
 
 3. Run the application:
+- **Windows:** Double-click `run.bat` or run:
+```bash
+run.bat
+```
+- **Other OS:**
 ```bash
 python main.py
 ```
@@ -83,4 +88,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For support and questions, please open an issue on GitHub or contact the maintainers. 
+For support and questions, please open an issue on GitHub or contact the maintainers.
+
+## Continuous Integration
+
+This project uses [GitHub Actions](https://github.com/features/actions) for continuous integration. Every push and pull request to the `main` branch will automatically:
+- Install dependencies
+- Run tests (if any are present)
+
+You can find the workflow file in `.github/workflows/python-app.yml`. 
