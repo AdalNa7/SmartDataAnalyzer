@@ -23,5 +23,6 @@ except Exception as e:
     from minimal_app import app
 
 if __name__ == '__main__':
-    print("Starting Smart Data Analyzer on port 3000")
-    app.run(host='0.0.0.0', port=3000, debug=False)
+    port = os.getenv('PORT', 3000)
+    print("Starting Smart Data Analyzer on port" ,port)
+    app.run(host='0.0.0.0', port=port, debug=False)
